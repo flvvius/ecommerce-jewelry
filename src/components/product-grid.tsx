@@ -7,121 +7,24 @@ import { Button } from "~/components/ui/button"
 import { Badge } from "~/components/ui/badge"
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip"
 
-export default function ProductGrid() {
-  const products = [
-    {
-      id: 1,
-      name: "Diamond Pendant Necklace",
-      price: 1299,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Necklaces",
-      isNew: true,
-      isBestseller: false,
-    },
-    {
-      id: 2,
-      name: "Gold Hoop Earrings",
-      price: 499,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Earrings",
-      isNew: false,
-      isBestseller: true,
-    },
-    {
-      id: 3,
-      name: "Sapphire Tennis Bracelet",
-      price: 899,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Bracelets",
-      isNew: true,
-      isBestseller: false,
-    },
-    {
-      id: 4,
-      name: "Emerald Cut Engagement Ring",
-      price: 2499,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Rings",
-      isNew: false,
-      isBestseller: true,
-    },
-    {
-      id: 5,
-      name: "Pearl Drop Earrings",
-      price: 349,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Earrings",
-      isNew: false,
-      isBestseller: false,
-    },
-    {
-      id: 6,
-      name: "Rose Gold Chain Bracelet",
-      price: 599,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Bracelets",
-      isNew: false,
-      isBestseller: false,
-    },
-    {
-      id: 7,
-      name: "Vintage Inspired Necklace",
-      price: 799,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Necklaces",
-      isNew: false,
-      isBestseller: false,
-    },
-    {
-      id: 8,
-      name: "Stacking Rings Set",
-      price: 449,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Rings",
-      isNew: true,
-      isBestseller: false,
-    },
-    {
-      id: 9,
-      name: "Silver Statement Earrings",
-      price: 279,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Earrings",
-      isNew: false,
-      isBestseller: false,
-    },
-    {
-      id: 10,
-      name: "Minimalist Gold Necklace",
-      price: 399,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Necklaces",
-      isNew: false,
-      isBestseller: false,
-    },
-    {
-      id: 11,
-      name: "Diamond Eternity Band",
-      price: 1899,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Rings",
-      isNew: false,
-      isBestseller: false,
-    },
-    {
-      id: 12,
-      name: "Charm Bracelet",
-      price: 349,
-      image: "/placeholder.svg?height=600&width=600",
-      category: "Bracelets",
-      isNew: false,
-      isBestseller: false,
-    },
-  ]
+type Product = {
+  id: string | number
+  name: string
+  price: number
+  image: string
+  category?: string
+  isNew?: boolean
+  isBestseller?: boolean
+}
 
-  const [wishlist, setWishlist] = useState<number[]>([])
+interface ProductGridProps {
+  products: Product[]
+}
 
-  const toggleWishlist = (id: number) => {
+export default function ProductGrid({ products }: ProductGridProps) {
+  const [wishlist, setWishlist] = useState<(string | number)[]>([])
+
+  const toggleWishlist = (id: string | number) => {
     if (wishlist.includes(id)) {
       setWishlist(wishlist.filter((productId) => productId !== id))
     } else {
