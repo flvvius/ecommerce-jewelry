@@ -1,11 +1,16 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Link from "next/link"
-import { Heart, ShoppingCart } from "lucide-react"
-import { Button } from "~/components/ui/button"
-import { Badge } from "~/components/ui/badge"
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "~/components/ui/tooltip"
+import { useState } from "react";
+import Link from "next/link";
+import { Heart, ShoppingCart } from "lucide-react";
+import { Button } from "~/components/ui/button";
+import { Badge } from "~/components/ui/badge";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "~/components/ui/tooltip";
 
 export default function FeaturedProducts() {
   const products = [
@@ -81,37 +86,39 @@ export default function FeaturedProducts() {
       isNew: true,
       isBestseller: false,
     },
-  ]
+  ];
 
-  const [wishlist, setWishlist] = useState<number[]>([])
+  const [wishlist, setWishlist] = useState<number[]>([]);
 
   const toggleWishlist = (id: number) => {
     if (wishlist.includes(id)) {
-      setWishlist(wishlist.filter((productId) => productId !== id))
+      setWishlist(wishlist.filter((productId) => productId !== id));
     } else {
-      setWishlist([...wishlist, id])
+      setWishlist([...wishlist, id]);
     }
-  }
+  };
 
   return (
     <section className="py-16 md:py-24">
-      <div className="container px-4 md:px-6">
+      <div className="container mx-auto max-w-screen-xl px-4 md:px-6">
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-2">
-            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">Featured Collection</h2>
-            <p className="max-w-[700px] text-muted-foreground md:text-xl/relaxed">
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
+              Featured Collection
+            </h2>
+            <p className="text-muted-foreground max-w-[700px] md:text-xl/relaxed">
               Discover our most popular and newest pieces
             </p>
           </div>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6 mt-8 md:mt-12">
+        <div className="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-2 md:mt-12 md:grid-cols-3 lg:grid-cols-4">
           {products.map((product) => (
             <div key={product.id} className="group relative">
-              <div className="aspect-square overflow-hidden rounded-lg bg-muted">
+              <div className="bg-muted aspect-square overflow-hidden rounded-lg">
                 <img
                   src={product.image || "/placeholder.svg"}
                   alt={product.name}
-                  className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105"
+                  className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                 />
                 <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">
                   <TooltipProvider>
@@ -120,7 +127,7 @@ export default function FeaturedProducts() {
                         <Button
                           variant="secondary"
                           size="icon"
-                          className="h-8 w-8 rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                          className="h-8 w-8 rounded-full opacity-0 transition-opacity group-hover:opacity-100"
                           onClick={() => toggleWishlist(product.id)}
                         >
                           <Heart
@@ -135,7 +142,7 @@ export default function FeaturedProducts() {
                     </Tooltip>
                   </TooltipProvider>
                 </div>
-                <div className="absolute inset-x-0 bottom-0 flex justify-center opacity-0 group-hover:opacity-100 transition-opacity pb-4">
+                <div className="absolute inset-x-0 bottom-0 flex justify-center pb-4 opacity-0 transition-opacity group-hover:opacity-100">
                   <Button className="rounded-full">
                     <ShoppingCart className="mr-2 h-4 w-4" />
                     Add to Cart
@@ -155,18 +162,23 @@ export default function FeaturedProducts() {
               <div className="mt-4 flex justify-between">
                 <div>
                   <h3 className="text-sm font-medium">
-                    <Link href={`/products/${product.id}`} className="hover:underline">
+                    <Link
+                      href={`/products/${product.id}`}
+                      className="hover:underline"
+                    >
                       {product.name}
                     </Link>
                   </h3>
-                  <p className="text-xs text-muted-foreground">{product.category}</p>
+                  <p className="text-muted-foreground text-xs">
+                    {product.category}
+                  </p>
                 </div>
                 <p className="text-sm font-medium">${product.price}</p>
               </div>
             </div>
           ))}
         </div>
-        <div className="flex justify-center mt-12">
+        <div className="mt-12 flex justify-center">
           <Link href="/products">
             <Button variant="outline" className="rounded-full px-8">
               View All Products
@@ -175,6 +187,5 @@ export default function FeaturedProducts() {
         </div>
       </div>
     </section>
-  )
+  );
 }
-

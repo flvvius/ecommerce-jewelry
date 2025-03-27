@@ -14,7 +14,7 @@ export default function Home() {
       <CategorySection />
       <FeaturedProducts />
       <section className="bg-muted/50 py-16 md:py-24">
-        <div className="container px-4 md:px-6">
+        <div className="container mx-auto max-w-screen-xl px-4 md:px-6">
           <div className="grid items-center gap-6 lg:grid-cols-2 lg:gap-12">
             <div className="space-y-4">
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">
