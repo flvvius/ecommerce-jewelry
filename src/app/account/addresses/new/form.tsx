@@ -134,6 +134,33 @@ export default function FormWithErrorHandling({
             <option value="CA">Canada</option>
             <option value="GB">United Kingdom</option>
             <option value="AU">Australia</option>
+            <option value="NZ">New Zealand</option>
+            <option value="FR">France</option>
+            <option value="DE">Germany</option>
+            <option value="IT">Italy</option>
+            <option value="ES">Spain</option>
+            <option value="NL">Netherlands</option>
+            <option value="BE">Belgium</option>
+            <option value="SE">Sweden</option>
+            <option value="NO">Norway</option>
+            <option value="DK">Denmark</option>
+            <option value="IE">Ireland</option>
+            <option value="AT">Austria</option>
+            <option value="CH">Switzerland</option>
+            <option value="PL">Poland</option>
+            <option value="CZ">Czech Republic</option>
+            <option value="HU">Hungary</option>
+            <option value="RO">Romania</option>
+            <option value="GR">Greece</option>
+            <option value="TR">Turkey</option>
+            <option value="SA">Saudi Arabia</option>
+            <option value="AE">United Arab Emirates</option>
+            <option value="QA">Qatar</option>
+            <option value="KW">Kuwait</option>
+            <option value="SA">Saudi Arabia</option>
+            <option value="OM">Oman</option>
+            
+            
           </select>
         </div>
       </div>
