@@ -3,6 +3,54 @@ import { redirect } from "next/navigation";
 import { Button } from "~/components/ui/button";
 import Link from "next/link";
 import { getAddressesForUser } from "~/utils/auth";
+import { db } from "~/server/db";
+import { addresses } from "~/server/db/schema";
+import { eq } from "drizzle-orm";
+import { revalidatePath } from "next/cache";
+
+async function setAddressAsDefault(formData: FormData) {
+  "use server";
+
+  const user = await currentUser();
+  if (!user) return;
+
+  const addressId = Number(formData.get("addressId"));
+  if (!addressId) return;
+
+  try {
+    await db
+      .update(addresses)
+      .set({ isDefault: false })
+      .where(eq(addresses.clerkUserId, user.id));
+
+    await db
+      .update(addresses)
+      .set({ isDefault: true })
+      .where(eq(addresses.id, addressId));
+
+    revalidatePath("/account/addresses");
+  } catch (error) {
+    console.error("Error setting default address:", error);
+  }
+}
+
+async function deleteAddress(formData: FormData) {
+  "use server";
+
+  const user = await currentUser();
+  if (!user) return;
+
+  const addressId = Number(formData.get("addressId"));
+  if (!addressId) return;
+
+  try {
+    await db.delete(addresses).where(eq(addresses.id, addressId));
+
+    revalidatePath("/account/addresses");
+  } catch (error) {
+    console.error("Error deleting address:", error);
+  }
+}
 
 export default async function AddressesPage() {
   const user = await currentUser();
@@ -66,16 +114,20 @@ export default async function AddressesPage() {
                     Edit
                   </Link>
                 </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <Link href={`/account/addresses/${address.id}/set-default`}>
-                    Set as Default
-                  </Link>
-                </Button>
-                <Button variant="destructive" size="sm" asChild>
-                  <Link href={`/account/addresses/${address.id}/delete`}>
+                {!address.isDefault && (
+                  <form action={setAddressAsDefault}>
+                    <input type="hidden" name="addressId" value={address.id} />
+                    <Button variant="outline" size="sm" type="submit">
+                      Set as Default
+                    </Button>
+                  </form>
+                )}
+                <form action={deleteAddress}>
+                  <input type="hidden" name="addressId" value={address.id} />
+                  <Button variant="destructive" size="sm" type="submit">
                     Delete
-                  </Link>
-                </Button>
+                  </Button>
+                </form>
               </div>
             </div>
           ))}
