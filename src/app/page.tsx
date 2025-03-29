@@ -6,8 +6,13 @@ import FeaturedProducts from "~/components/featured-products";
 import HeroSection from "~/components/hero-section";
 import CategorySection from "~/components/category-section";
 import TestimonialSection from "~/components/testimonial-section";
+// import { db } from "~/server/db";
 
-export default function Home() {
+export default async function Home() {
+
+  // const posts = await db.query.products.findMany();
+  // console.log(posts);
+
   return (
     <>
       <HeroSection />

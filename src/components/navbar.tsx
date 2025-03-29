@@ -4,8 +4,22 @@ import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { ThemeToggle } from "~/components/theme-toggle";
+import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
+import dynamic from "next/dynamic";
+import { useEffect, useState } from "react";
+
+const ClientUserButton = dynamic(
+  () => import("@clerk/nextjs").then((mod) => mod.UserButton),
+  { ssr: false },
+);
 
 export default function Navbar() {
+  const [isMounted, setIsMounted] = useState(false);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
       <div className="container mx-auto flex h-16 max-w-screen-xl items-center justify-between px-4">
@@ -54,7 +68,11 @@ export default function Navbar() {
               </span>
             </Button>
           </Link>
-          <Button className="hidden md:flex">Sign In</Button>
+          <SignedOut>
+            <SignInButton />
+            <SignUpButton />
+          </SignedOut>
+          <SignedIn>{isMounted && <ClientUserButton />}</SignedIn>
         </div>
       </div>
     </header>
