@@ -102,7 +102,7 @@ export default async function EditAddressPage({
   }
 
   return (
-    <div className="container max-w-2xl py-10">
+    <div className="container mx-auto max-w-2xl py-10">
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Edit Address</h1>
         <p className="text-muted-foreground mt-2">
