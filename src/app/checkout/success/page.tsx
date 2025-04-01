@@ -22,6 +22,39 @@ export default function CheckoutSuccessPage() {
         return;
       }
 
+      // Development test mode for easier debugging
+      if (sessionId === "cs_test_dev_mode") {
+        console.log("Using test development mode");
+        setOrder({
+          id: "TEST-ORDER-12345",
+          date: new Date().toLocaleDateString(),
+          status: "processing",
+          total: "$123.45",
+          items: [
+            {
+              name: "Test Product 1",
+              price: "$89.99",
+              quantity: 1,
+            },
+            {
+              name: "Test Product 2",
+              price: "$33.46",
+              quantity: 1,
+            },
+          ],
+          shipping: {
+            name: "Test Customer",
+            address: "123 Test Street",
+            city: "Test City",
+            state: "TS",
+            zip: "12345",
+            country: "Testland",
+          },
+        });
+        setLoading(false);
+        return;
+      }
+
       try {
         setLoading(true);
         setError(null);
