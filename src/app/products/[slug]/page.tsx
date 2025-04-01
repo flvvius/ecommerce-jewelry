@@ -2,11 +2,10 @@ import React from "react";
 import { Suspense } from "react";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { notFound } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Separator } from "~/components/ui/separator";
 import AddToCartButton from "~/components/add-to-cart-button";
-import { notFound } from "next/navigation";
-import ProductDetails from "~/components/product-details";
 
 // Define a more specific type for params
 type PageParams = {
@@ -50,7 +49,98 @@ export default function ProductPage({ params }: PageParams) {
       </div>
 
       <Suspense fallback={<ProductLoading />}>
-        <ProductDetails product={productData} />
+        <div className="grid gap-8 md:grid-cols-2 lg:gap-16">
+          {/* Product Gallery */}
+          <div className="space-y-4">
+            <div className="bg-muted aspect-square overflow-hidden rounded-lg">
+              <img
+                src={productData.images?.[0]?.url || "/placeholder.svg"}
+                alt={productData.images?.[0]?.altText || productData.name}
+                className="h-full w-full object-cover"
+              />
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {productData.images && productData.images.length > 0 ? (
+                productData.images.map(
+                  (image: { url: string; altText?: string }, index: number) => (
+                    <div
+                      key={index}
+                      className="bg-muted aspect-square overflow-hidden rounded-md"
+                    >
+                      <img
+                        src={image.url || "/placeholder.svg"}
+                        alt={
+                          image.altText || `${productData.name} ${index + 1}`
+                        }
+                        className="h-full w-full object-cover"
+                      />
+                    </div>
+                  ),
+                )
+              ) : (
+                <div className="bg-muted col-span-4 flex h-20 items-center justify-center rounded-md">
+                  <p className="text-muted-foreground text-sm">
+                    No additional images available
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Product Info */}
+          <div className="space-y-6">
+            <div>
+              <h1 className="text-3xl font-bold">{productData.name}</h1>
+              <p className="mt-2 text-2xl font-bold">${productData.price}</p>
+            </div>
+
+            <p className="text-muted-foreground">
+              {productData.description || "No description available."}
+            </p>
+
+            <AddToCartButton product={productData} />
+
+            <Separator />
+
+            <Tabs defaultValue="description">
+              <TabsList className="grid w-full grid-cols-3">
+                <TabsTrigger value="description">Description</TabsTrigger>
+                <TabsTrigger value="details">Details</TabsTrigger>
+                <TabsTrigger value="shipping">Shipping</TabsTrigger>
+              </TabsList>
+              <TabsContent value="description" className="pt-4">
+                <p className="text-muted-foreground">
+                  {productData.description || "No description available."}
+                </p>
+              </TabsContent>
+              <TabsContent value="details" className="pt-4">
+                <ul className="text-muted-foreground list-disc space-y-1 pl-5">
+                  <li>
+                    Material:{" "}
+                    {productData.category === "rings" ||
+                    productData.category === "bracelets"
+                      ? "18k Gold"
+                      : "14k Gold"}
+                  </li>
+                  <li>Dimensions: Varies by size</li>
+                  <li>Handcrafted with care</li>
+                  <li>Ethically sourced materials</li>
+                </ul>
+              </TabsContent>
+              <TabsContent value="shipping" className="pt-4">
+                <div className="text-muted-foreground space-y-4">
+                  <p>
+                    We offer free standard shipping on all orders over $100.
+                  </p>
+                  <p>
+                    Standard shipping takes 3-5 business days. Express shipping
+                    is available.
+                  </p>
+                </div>
+              </TabsContent>
+            </Tabs>
+          </div>
+        </div>
       </Suspense>
     </div>
   );
