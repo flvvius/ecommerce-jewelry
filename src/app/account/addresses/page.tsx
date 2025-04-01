@@ -62,7 +62,7 @@ export default async function AddressesPage() {
   const addresses = await getAddressesForUser();
 
   return (
-    <div className="container mx-auto max-w-4xl py-10">
+    <div>
       <div className="mb-8 flex items-center justify-between">
         <h1 className="text-2xl font-bold">My Addresses</h1>
         <Button asChild>

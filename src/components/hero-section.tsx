@@ -39,7 +39,7 @@ export default function HeroSection() {
   }, [slides.length]);
 
   return (
-    <section className="relative h-[70vh] min-h-[600px] overflow-hidden">
+    <section className="relative mx-auto h-[70vh] min-h-[600px] w-full max-w-screen-2xl overflow-hidden rounded-xl">
       {slides.map((slide, index) => (
         <div
           key={index}
@@ -56,7 +56,7 @@ export default function HeroSection() {
             className="h-full w-full object-cover"
           />
           <div className="absolute inset-0 z-20 flex items-center justify-center">
-            <div className="container mx-auto max-w-screen-xl px-4 text-center md:px-6">
+            <div className="container px-4 text-center md:px-6">
               <div className="mx-auto max-w-2xl space-y-4">
                 <h1 className="text-4xl font-bold tracking-tighter text-white sm:text-5xl md:text-6xl">
                   {slide.title}

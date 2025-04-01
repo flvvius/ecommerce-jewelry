@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import {
   ArrowRight,
   ChevronLeft,
@@ -10,6 +11,7 @@ import {
   Plus,
   ShoppingBag,
   Trash2,
+  Loader2,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
@@ -17,50 +19,90 @@ import { Input } from "~/components/ui/input";
 import { loadStripe } from "@stripe/stripe-js";
 import { toast } from "sonner";
 
+// Define the CartItem type to match your API response
+type CartItem = {
+  id: number;
+  productId: number;
+  name: string;
+  price: number;
+  image: string;
+  quantity: number;
+  description?: string;
+  slug?: string;
+};
+
 const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
   ? loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY)
   : null;
 
 export default function CartPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [cartItems, setCartItems] = useState([
-    {
-      id: 1,
-      name: "Diamond Pendant Necklace",
-      price: 1299,
-      image: "/placeholder.svg?height=200&width=200",
-      quantity: 1,
-      description: "Elegant diamond pendant with 18k gold chain",
-    },
-    {
-      id: 2,
-      name: "Gold Hoop Earrings",
-      price: 499,
-      image: "/placeholder.svg?height=200&width=200",
-      quantity: 2,
-      description: "Classic 14k gold hoop earrings",
-    },
-    {
-      id: 3,
-      name: "Sapphire Tennis Bracelet",
-      price: 899,
-      image: "/placeholder.svg?height=200&width=200",
-      quantity: 1,
-      description: "Stunning sapphire tennis bracelet with white gold setting",
-    },
-  ]);
+  const [cartItems, setCartItems] = useState<CartItem[]>([]);
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
 
-  const updateQuantity = (id: number, newQuantity: number) => {
+  // Fetch cart items on component mount
+  useEffect(() => {
+    const fetchCart = async () => {
+      try {
+        const response = await fetch("/api/cart");
+        if (!response.ok) {
+          throw new Error("Failed to fetch cart");
+        }
+        const data = await response.json();
+        setCartItems(data.items || []);
+      } catch (error) {
+        console.error("Error fetching cart:", error);
+        toast("Failed to load your cart. Please try again.");
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    fetchCart();
+  }, []);
+
+  const updateQuantity = async (id: number, newQuantity: number) => {
     if (newQuantity < 1) return;
-    setCartItems(
-      cartItems.map((item) =>
-        item.id === id ? { ...item, quantity: newQuantity } : item,
-      ),
-    );
+
+    try {
+      const response = await fetch(`/api/cart/${id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ quantity: newQuantity }),
+      });
+
+      if (response.ok) {
+        setCartItems(
+          cartItems.map((item) =>
+            item.id === id ? { ...item, quantity: newQuantity } : item,
+          ),
+        );
+      } else {
+        toast("Failed to update quantity");
+      }
+    } catch (error) {
+      console.error("Error updating quantity:", error);
+      toast("Failed to update quantity");
+    }
   };
 
-  const removeItem = (id: number) => {
-    setCartItems(cartItems.filter((item) => item.id !== id));
+  const removeItem = async (id: number) => {
+    try {
+      const response = await fetch(`/api/cart/${id}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        setCartItems(cartItems.filter((item) => item.id !== id));
+      } else {
+        toast("Failed to remove item");
+      }
+    } catch (error) {
+      console.error("Error removing item:", error);
+      toast("Failed to remove item");
+    }
   };
 
   const subtotal = cartItems.reduce(
@@ -75,10 +117,16 @@ export default function CartPage() {
 
     try {
       if (!stripePromise) {
-        toast.error("Stripe is not properly configured");
+        toast("Stripe is not properly configured");
         setIsLoading(false);
         return;
       }
+
+      // Get the cart session ID from cookies
+      const cartSessionId = document.cookie
+        .split("; ")
+        .find((row) => row.startsWith("cartSessionId="))
+        ?.split("=")[1];
 
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -87,6 +135,7 @@ export default function CartPage() {
         },
         body: JSON.stringify({
           items: cartItems,
+          cartSessionId,
           metadata: {
             customerNote: "Standard shipping",
           },
@@ -96,18 +145,30 @@ export default function CartPage() {
       const { url, error } = await response.json();
 
       if (error) {
-        toast.error("Checkout Error");
+        toast(error.message || "Checkout Error");
         return;
       }
 
       window.location.href = url;
     } catch (error) {
       console.error("Error during checkout:", error);
-      toast.error("Checkout Error");
+      toast("Checkout Error");
     } finally {
       setIsLoading(false);
     }
   };
+
+  // Show loading state
+  if (isInitialLoading) {
+    return (
+      <div className="container flex items-center justify-center px-4 py-20 md:px-6">
+        <div className="text-center">
+          <ShoppingBag className="mx-auto h-10 w-10 animate-pulse text-gray-400" />
+          <p className="mt-4 text-lg">Loading your cart...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="container px-4 py-8 md:px-6">
@@ -151,7 +212,7 @@ export default function CartPage() {
                 <div className="flex flex-1 flex-col">
                   <div className="flex justify-between">
                     <Link
-                      href={`/products/${item.id}`}
+                      href={`/products/${item.slug || item.id}`}
                       className="font-medium hover:underline"
                     >
                       {item.name}
@@ -233,9 +294,26 @@ export default function CartPage() {
                   onClick={handleCheckout}
                   disabled={isLoading || cartItems.length === 0}
                 >
-                  {isLoading ? "Processing..." : "Checkout"}
-                  <ChevronRight className="ml-2 h-4 w-4" />
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Checkout"
+                  )}
                 </Button>
+
+                {process.env.NODE_ENV === "development" && (
+                  <Link
+                    href="/checkout/success?session_id=cs_test_dev_mode"
+                    className="mt-2 block"
+                  >
+                    <Button variant="outline" className="w-full">
+                      Test Success Page
+                    </Button>
+                  </Link>
+                )}
               </div>
               <div className="mt-6">
                 <p className="text-muted-foreground text-center text-xs">

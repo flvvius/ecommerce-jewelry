@@ -71,7 +71,7 @@ export default async function NewAddressPage() {
   }
 
   return (
-    <div className="container mx-auto max-w-2xl py-10">
+    <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold">Add New Address</h1>
         <p className="text-muted-foreground mt-2">

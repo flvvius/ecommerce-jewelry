@@ -1,28 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { ShoppingBag } from "lucide-react";
+import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { Button } from "~/components/ui/button";
-import { ThemeToggle } from "~/components/theme-toggle";
-import { SignedIn, SignedOut, SignInButton, SignUpButton } from "@clerk/nextjs";
-import dynamic from "next/dynamic";
-import { useEffect, useState } from "react";
-
-const ClientUserButton = dynamic(
-  () => import("@clerk/nextjs").then((mod) => mod.UserButton),
-  { ssr: false },
-);
+import CartButton from "~/components/cart-button";
 
 export default function Navbar() {
-  const [isMounted, setIsMounted] = useState(false);
-
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
-      <div className="container mx-auto flex h-16 max-w-screen-xl items-center justify-between px-4">
+      <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
         <Link href="/" className="flex items-center space-x-2">
           <span className="text-xl font-bold">Lumina</span>
         </Link>
@@ -34,45 +20,48 @@ export default function Navbar() {
             Shop All
           </Link>
           <Link
-            href="/products/necklaces"
+            href="/products?category=necklaces"
             className="hover:text-primary text-sm font-medium transition-colors"
           >
             Necklaces
           </Link>
           <Link
-            href="/products/rings"
+            href="/products?category=rings"
             className="hover:text-primary text-sm font-medium transition-colors"
           >
             Rings
           </Link>
           <Link
-            href="/products/earrings"
+            href="/products?category=earrings"
             className="hover:text-primary text-sm font-medium transition-colors"
           >
             Earrings
           </Link>
           <Link
-            href="/products/bracelets"
+            href="/products?category=bracelets"
             className="hover:text-primary text-sm font-medium transition-colors"
           >
             Bracelets
           </Link>
         </nav>
         <div className="flex items-center gap-4">
-          <ThemeToggle />
-          <Link href="/cart">
-            <Button variant="outline" size="icon" className="relative">
-              <ShoppingBag className="h-5 w-5" />
-              <span className="bg-primary text-primary-foreground absolute -top-1 -right-1 flex h-5 w-5 items-center justify-center rounded-full text-[10px]">
-                3
-              </span>
-            </Button>
-          </Link>
+          <CartButton />
+          <SignedIn>
+            {/* User is signed in */}
+            <Link
+              href="/account"
+              className="hover:text-primary mr-2 hidden text-sm font-medium transition-colors md:flex"
+            >
+              My Account
+            </Link>
+            <UserButton afterSignOutUrl="/" />
+          </SignedIn>
           <SignedOut>
-            <SignInButton />
-            <SignUpButton />
+            {/* User is signed out */}
+            <SignInButton mode="modal">
+              <Button className="hidden md:flex">Sign In</Button>
+            </SignInButton>
           </SignedOut>
-          <SignedIn>{isMounted && <ClientUserButton />}</SignedIn>
         </div>
       </div>
     </header>

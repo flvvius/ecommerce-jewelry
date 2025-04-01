@@ -55,8 +55,8 @@ export default function TestimonialSection() {
   };
 
   return (
-    <section className="py-16 md:py-24">
-      <div className="container mx-auto max-w-screen-xl px-4 md:px-6">
+    <section className="mx-auto w-full max-w-screen-2xl py-12">
+      <div className="container mx-auto px-4 md:px-6">
         <div className="flex flex-col items-center justify-center space-y-4 text-center">
           <div className="space-y-2">
             <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl">

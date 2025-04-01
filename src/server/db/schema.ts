@@ -48,6 +48,7 @@ export const products = createTable("products", {
   price: decimal("price", { precision: 10, scale: 2 }).notNull(),
   compareAtPrice: decimal("compare_at_price", { precision: 10, scale: 2 }),
   category: productCategoryEnum("category").notNull(),
+  material: text("material"),
   inventory: integer("inventory").notNull().default(0),
   isNew: boolean("is_new").default(false),
   isBestseller: boolean("is_bestseller").default(false),

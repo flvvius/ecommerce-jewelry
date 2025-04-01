@@ -16,3 +16,14 @@ const conn = globalForDb.conn ?? postgres(env.DATABASE_URL);
 if (env.NODE_ENV !== "production") globalForDb.conn = conn;
 
 export const db = drizzle(conn, { schema });
+
+export async function runMigrations() {
+  try {
+    // For Neon DB with Vercel, we don't need to run migrations programmatically
+    // as Vercel handles this with the drizzle-kit push command
+    console.log("Migrations should be run using drizzle-kit push:pg")
+  } catch (error) {
+    console.error("Error running migrations:", error)
+    throw error
+  }
+}
