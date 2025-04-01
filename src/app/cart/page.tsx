@@ -19,8 +19,9 @@ import { Separator } from "~/components/ui/separator";
 import { Input } from "~/components/ui/input";
 import { loadStripe } from "@stripe/stripe-js";
 import { toast } from "sonner";
-import ShippingAddressForm from "~/components/shipping-address-form";
-import type { ShippingAddressData } from "~/components/shipping-address-form";
+import { useUser } from "@clerk/nextjs";
+import CheckoutAddressForm from "~/components/checkout-address-form";
+import type { ShippingAddressData } from "~/components/checkout-address-form";
 
 // Define the CartItem type to match your API response
 type CartItem = {
@@ -45,6 +46,7 @@ export default function CartPage() {
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [shippingAddress, setShippingAddress] =
     useState<ShippingAddressData | null>(null);
+  const { isSignedIn } = useUser();
 
   // Fetch cart items on component mount
   useEffect(() => {
@@ -420,7 +422,7 @@ export default function CartPage() {
       )}
 
       {/* Shipping Address Form Dialog */}
-      <ShippingAddressForm
+      <CheckoutAddressForm
         isOpen={isAddressFormOpen}
         onClose={() => setIsAddressFormOpen(false)}
         onSubmit={handleAddressSubmit}
