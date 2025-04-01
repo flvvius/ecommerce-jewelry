@@ -81,6 +81,8 @@ export const addresses = createTable("addresses", {
   country: varchar("country", { length: 2 }).notNull(),
   phone: varchar("phone", { length: 20 }),
   isDefault: boolean("is_default").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
 });
 
 export const orders = createTable("orders", {

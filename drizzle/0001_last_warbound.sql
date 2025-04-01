@@ -1,0 +1,2 @@
+ALTER TABLE "ECommerce Project_addresses" ADD COLUMN "created_at" timestamp DEFAULT now();--> statement-breakpoint
+ALTER TABLE "ECommerce Project_addresses" ADD COLUMN "updated_at" timestamp DEFAULT now();

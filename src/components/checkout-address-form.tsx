@@ -29,6 +29,8 @@ export type Address = {
   country: string;
   phone?: string | null;
   isDefault?: boolean;
+  createdAt?: Date;
+  updatedAt?: Date;
 };
 
 export type ShippingAddressData = {
@@ -106,7 +108,9 @@ export default function CheckoutAddressForm({
     try {
       const response = await fetch("/api/addresses");
       if (!response.ok) {
-        throw new Error("Failed to fetch addresses");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `HTTP error ${response.status}`;
+        throw new Error(errorMessage);
       }
 
       const data = await response.json();
@@ -128,7 +132,9 @@ export default function CheckoutAddressForm({
       }
     } catch (error) {
       console.error("Error fetching addresses:", error);
-      toast.error("Could not load your saved addresses");
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Could not load your saved addresses: ${errorMessage}`);
       setAddressType("new");
     } finally {
       setIsLoadingAddresses(false);

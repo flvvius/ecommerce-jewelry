@@ -24,10 +24,13 @@ export async function GET() {
     return NextResponse.json(userAddresses);
   } catch (error) {
     console.error("Error fetching addresses:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch addresses" },
-      { status: 500 },
-    );
+    // Provide more specific error message based on error type
+    const errorMessage =
+      error instanceof Error
+        ? `Failed to fetch addresses: ${error.message}`
+        : "Failed to fetch addresses due to an unknown error";
+
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
   }
 }
 
