@@ -1,7 +1,7 @@
 import { Stripe } from "stripe";
 import { NextResponse } from "next/server";
 import { db } from "~/server/db";
-import { carts, orders, orderItems } from "~/server/db/schema";
+import { carts, orders, orderItems, addresses } from "~/server/db/schema";
 import { eq, inArray } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { products } from "~/server/db/schema";
@@ -28,6 +28,7 @@ export async function POST(request: Request) {
     const body = await request.json();
     const items = body.items as CartItem[];
     const baseUrl = request.headers.get("host") || "";
+    const shippingAddressId = body.metadata?.shippingAddressId;
 
     // More reliable way to determine origin
     const protocol = baseUrl.includes("localhost") ? "http" : "https";
@@ -45,6 +46,24 @@ export async function POST(request: Request) {
       "Checkout request received with items:",
       JSON.stringify(items, null, 2),
     );
+
+    // Fetch shipping address if provided
+    let shippingAddress = null;
+    if (shippingAddressId) {
+      try {
+        const addressResult = await db
+          .select()
+          .from(addresses)
+          .where(eq(addresses.id, shippingAddressId))
+          .limit(1);
+
+        if (addressResult.length > 0) {
+          shippingAddress = addressResult[0];
+        }
+      } catch (error) {
+        console.error("Error fetching shipping address:", error);
+      }
+    }
 
     // First, verify that all product IDs exist in the database
     const productIds = items.map((item: any) => item.productId);
@@ -85,8 +104,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Create Stripe checkout session
-    const session = await stripe.checkout.sessions.create({
+    // Prepare checkout session params
+    const checkoutParams: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ["card"],
       line_items: validItems.map((item: any) => {
         // Prepare image URL for Stripe (must be absolute)
@@ -133,7 +152,40 @@ export async function POST(request: Request) {
         orderId: `ORD-${Date.now()}`,
         cartSessionId: body.cartSessionId,
       },
-    });
+    };
+
+    // Add shipping address if available
+    if (shippingAddress) {
+      checkoutParams.shipping_address_collection = {
+        allowed_countries: [
+          "US",
+          "CA",
+          "GB",
+          "AU",
+          "FR",
+          "DE",
+          "IT",
+          "ES",
+          "JP",
+        ],
+      };
+
+      // Pass the shipping address through metadata since direct setting isn't available in types
+      checkoutParams.metadata = {
+        ...checkoutParams.metadata,
+        shipping_name: `${shippingAddress.firstName} ${shippingAddress.lastName}`,
+        shipping_address1: shippingAddress.address1,
+        shipping_address2: shippingAddress.address2 || "",
+        shipping_city: shippingAddress.city,
+        shipping_state: shippingAddress.state,
+        shipping_postal_code: shippingAddress.postalCode,
+        shipping_country: shippingAddress.country,
+        shipping_phone: shippingAddress.phone || "",
+      };
+    }
+
+    // Create Stripe checkout session
+    const session = await stripe.checkout.sessions.create(checkoutParams);
 
     // Create a pending order in the database
     const subtotal = validItems.reduce(
@@ -156,6 +208,9 @@ export async function POST(request: Request) {
           total: total.toString(),
           checkoutSessionId: session.id,
           paymentIntentId: session.payment_intent as string,
+          shippingAddressId: shippingAddressId
+            ? parseInt(shippingAddressId)
+            : undefined,
         })
         .returning();
 

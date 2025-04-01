@@ -12,12 +12,15 @@ import {
   ShoppingBag,
   Trash2,
   Loader2,
+  MapPin,
 } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Separator } from "~/components/ui/separator";
 import { Input } from "~/components/ui/input";
 import { loadStripe } from "@stripe/stripe-js";
 import { toast } from "sonner";
+import ShippingAddressForm from "~/components/shipping-address-form";
+import type { ShippingAddressData } from "~/components/shipping-address-form";
 
 // Define the CartItem type to match your API response
 type CartItem = {
@@ -39,6 +42,9 @@ export default function CartPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
+  const [shippingAddress, setShippingAddress] =
+    useState<ShippingAddressData | null>(null);
 
   // Fetch cart items on component mount
   useEffect(() => {
@@ -112,7 +118,22 @@ export default function CartPage() {
   const shipping = subtotal > 100 ? 0 : 10;
   const total = subtotal + shipping;
 
+  const handleAddressSubmit = async (address: ShippingAddressData) => {
+    setShippingAddress(address);
+    setIsAddressFormOpen(false);
+
+    toast.success("Shipping address added", {
+      description: `${address.address1}, ${address.city}, ${address.state} ${address.postalCode}`,
+    });
+  };
+
   const handleCheckout = async () => {
+    // If no shipping address is set, show the form
+    if (!shippingAddress) {
+      setIsAddressFormOpen(true);
+      return;
+    }
+
     setIsLoading(true);
 
     try {
@@ -128,6 +149,28 @@ export default function CartPage() {
         .find((row) => row.startsWith("cartSessionId="))
         ?.split("=")[1];
 
+      // First, save the shipping address
+      const addressResponse = await fetch("/api/shipping-address", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...shippingAddress,
+          cartSessionId,
+        }),
+      });
+
+      if (!addressResponse.ok) {
+        const addressError = await addressResponse.json();
+        throw new Error(
+          addressError.error || "Failed to save shipping address",
+        );
+      }
+
+      const { address } = await addressResponse.json();
+
+      // Then create the checkout session
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: {
@@ -138,6 +181,7 @@ export default function CartPage() {
           cartSessionId,
           metadata: {
             customerNote: "Standard shipping",
+            shippingAddressId: address.id,
           },
         }),
       });
@@ -283,6 +327,54 @@ export default function CartPage() {
                   Taxes calculated at checkout
                 </p>
               </div>
+
+              {/* Shipping Address Section */}
+              <div className="mt-4 space-y-4">
+                <Separator />
+
+                <div className="space-y-2">
+                  <h3 className="font-medium">Shipping Address</h3>
+
+                  {shippingAddress ? (
+                    <div className="text-muted-foreground rounded-md border p-3 text-sm">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p>
+                            {shippingAddress.firstName}{" "}
+                            {shippingAddress.lastName}
+                          </p>
+                          <p>{shippingAddress.address1}</p>
+                          {shippingAddress.address2 && (
+                            <p>{shippingAddress.address2}</p>
+                          )}
+                          <p>
+                            {shippingAddress.city}, {shippingAddress.state}{" "}
+                            {shippingAddress.postalCode}
+                          </p>
+                          <p>{shippingAddress.country}</p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setIsAddressFormOpen(true)}
+                        >
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  ) : (
+                    <Button
+                      variant="outline"
+                      className="w-full justify-start"
+                      onClick={() => setIsAddressFormOpen(true)}
+                    >
+                      <MapPin className="mr-2 h-4 w-4" />
+                      Add Shipping Address
+                    </Button>
+                  )}
+                </div>
+              </div>
+
               <div className="mt-6 space-y-4">
                 <div className="flex gap-2">
                   <Input placeholder="Discount code" className="flex-1" />
@@ -299,8 +391,10 @@ export default function CartPage() {
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Processing...
                     </>
+                  ) : shippingAddress ? (
+                    "Proceed to Payment"
                   ) : (
-                    "Checkout"
+                    "Add Shipping Address"
                   )}
                 </Button>
 
@@ -324,6 +418,13 @@ export default function CartPage() {
           </div>
         </div>
       )}
+
+      {/* Shipping Address Form Dialog */}
+      <ShippingAddressForm
+        isOpen={isAddressFormOpen}
+        onClose={() => setIsAddressFormOpen(false)}
+        onSubmit={handleAddressSubmit}
+      />
     </div>
   );
 }
