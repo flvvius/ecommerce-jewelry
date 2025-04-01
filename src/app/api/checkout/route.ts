@@ -1,9 +1,21 @@
+import { Stripe } from "stripe";
 import { NextResponse } from "next/server";
-import Stripe from "stripe";
 import { db } from "~/server/db";
-import { orders, orderItems, products } from "~/server/db/schema";
-import { cookies } from "next/headers";
+import { carts, orders, orderItems } from "~/server/db/schema";
 import { eq, inArray } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { products } from "~/server/db/schema";
+
+// Define the CartItem type
+type CartItem = {
+  id: string;
+  productId: string;
+  quantity: number;
+  name: string;
+  price: number;
+  description?: string | null;
+  image?: string;
+};
 
 // Initialize Stripe with your secret key
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
@@ -11,10 +23,15 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 });
 
 export async function POST(request: Request) {
-  const origin = request.headers.get("origin") || "http://localhost:3000";
-
   try {
-    const { items, cartSessionId, metadata = {} } = await request.json();
+    const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+    const body = await request.json();
+    const items = body.items as CartItem[];
+    const baseUrl = request.headers.get("host") || "";
+
+    // More reliable way to determine origin
+    const protocol = baseUrl.includes("localhost") ? "http" : "https";
+    const origin = request.headers.get("origin") || `${protocol}://${baseUrl}`;
 
     if (!items || items.length === 0) {
       return NextResponse.json(
@@ -112,9 +129,9 @@ export async function POST(request: Request) {
       success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/cart`,
       metadata: {
-        ...metadata,
+        ...body.metadata,
         orderId: `ORD-${Date.now()}`,
-        cartSessionId: cartSessionId,
+        cartSessionId: body.cartSessionId,
       },
     });
 

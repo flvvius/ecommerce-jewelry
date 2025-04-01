@@ -45,10 +45,16 @@ export default async function ProductsPage({
   const material = params.material;
   const sort = params.sort || "featured";
 
-  const apiUrl = new URL(
-    "/api/products",
-    process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000",
-  );
+  // For deployed environments, use relative URL path which automatically uses the correct host
+  let apiUrl: URL;
+
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    apiUrl = new URL("/api/products", process.env.NEXT_PUBLIC_APP_URL);
+  } else {
+    // In production, use relative URL which automatically resolves to the correct host
+    apiUrl = new URL("/api/products", "http://placeholder.com");
+    apiUrl.pathname = "/api/products"; // Use only the pathname for fetch
+  }
 
   if (category) {
     apiUrl.searchParams.append("category", category);
@@ -66,7 +72,12 @@ export default async function ProductsPage({
     apiUrl.searchParams.append("sort", sort);
   }
 
-  const res = await fetch(apiUrl.toString(), { next: { revalidate: 60 } });
+  // Use either the full URL or just the relative path with search params
+  const fetchUrl = process.env.NEXT_PUBLIC_APP_URL
+    ? apiUrl.toString()
+    : `${apiUrl.pathname}${apiUrl.search}`;
+
+  const res = await fetch(fetchUrl, { next: { revalidate: 60 } });
   const products: Product[] = await res.json();
 
   // Format filter labels for display

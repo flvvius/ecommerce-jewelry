@@ -58,12 +58,14 @@ export default function ProductPage({ params }: PageParams) {
 
 // Helper function to fetch product data
 async function fetchProduct(slug: string) {
-  const res = await fetch(
-    `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/api/products/${slug}`,
-    {
-      next: { revalidate: 60 },
-    },
-  );
+  // For deployed environments, use relative URL path which automatically uses the correct host
+  const apiUrl = process.env.NEXT_PUBLIC_APP_URL
+    ? `${process.env.NEXT_PUBLIC_APP_URL}/api/products/${slug}`
+    : `/api/products/${slug}`;
+
+  const res = await fetch(apiUrl, {
+    next: { revalidate: 60 },
+  });
 
   if (!res.ok) {
     return null;
