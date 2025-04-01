@@ -1,7 +1,7 @@
 import { db } from "~/server/db";
 import { addresses } from "~/server/db/schema";
 import { and, desc, eq } from "drizzle-orm";
-import { currentUser, clerkClient } from "@clerk/nextjs";
+import { currentUser } from "@clerk/nextjs/server";
 import { NextRequest, NextResponse } from "next/server";
 
 // Get all addresses for the current user
