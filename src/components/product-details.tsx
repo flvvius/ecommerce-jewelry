@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Image from "next/image";
 import { Star, Truck } from "lucide-react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Separator } from "~/components/ui/separator";
@@ -28,10 +29,13 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
     <div className="grid gap-8 md:grid-cols-2 lg:gap-16">
       <div className="space-y-4">
         <div className="bg-muted aspect-square overflow-hidden rounded-lg">
-          <img
+          <Image
             src={product.images[selectedImageIndex]?.url || "/placeholder.svg"}
             alt={product.images[selectedImageIndex]?.altText || product.name}
+            width={600}
+            height={600}
             className="h-full w-full object-cover"
+            priority
           />
         </div>
         <div className="grid grid-cols-4 gap-2">
@@ -45,9 +49,11 @@ export default function ProductDetails({ product }: ProductDetailsProps) {
                   }`}
                   onClick={() => setSelectedImageIndex(index)}
                 >
-                  <img
+                  <Image
                     src={image.url || "/placeholder.svg"}
                     alt={image.altText || `${product.name} ${index + 1}`}
+                    width={150}
+                    height={150}
                     className="h-full w-full object-cover"
                   />
                 </button>

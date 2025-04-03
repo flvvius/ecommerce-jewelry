@@ -87,7 +87,7 @@ export default function ProductSidebar({
               <div className="flex items-center justify-between">
                 <span className="text-sm">Material:</span>
                 <span className="text-sm font-semibold capitalize">
-                  {currentMaterial.replace("-", " ")}
+                  {currentMaterial.replace(/-/g, " ")}
                 </span>
               </div>
             )}

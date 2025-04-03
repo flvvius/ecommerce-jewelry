@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { Button } from "~/components/ui/button";
 
@@ -9,21 +10,21 @@ export default function HeroSection() {
   const [currentSlide, setCurrentSlide] = useState(0);
   const slides = [
     {
-      image: "/placeholder.svg?height=1080&width=1920",
+      image: "/images/hero-1.jpg",
       title: "Timeless Elegance",
       description: "Discover our new collection of handcrafted jewelry pieces",
       cta: "Shop Now",
       link: "/products",
     },
     {
-      image: "/placeholder.svg?height=1080&width=1920",
+      image: "/images/hero-2.jpg",
       title: "Summer Essentials",
       description: "Lightweight pieces perfect for the season",
       cta: "Explore Collection",
       link: "/products/summer",
     },
     {
-      image: "/placeholder.svg?height=1080&width=1920",
+      image: "/images/hero-3.jpg",
       title: "Gift Ideas",
       description: "Thoughtful jewelry gifts for every occasion",
       cta: "Find the Perfect Gift",
@@ -50,10 +51,12 @@ export default function HeroSection() {
           }`}
         >
           <div className="absolute inset-0 z-10 bg-black/40" />
-          <img
-            src={slide.image || "/placeholder.svg"}
+          <Image
+            src={slide.image}
             alt={slide.title}
+            fill
             className="h-full w-full object-cover"
+            priority={index === currentSlide}
           />
           <div className="absolute inset-0 z-20 flex items-center justify-center">
             <div className="container px-4 text-center md:px-6">

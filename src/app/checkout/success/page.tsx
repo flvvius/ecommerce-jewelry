@@ -222,7 +222,28 @@ export default function CheckoutSuccessPage() {
             <div className="mt-4 border-t pt-4">
               <div className="flex justify-between font-medium">
                 <span>Total</span>
-                <span>{order?.total || "Processing"}</span>
+                <span>
+                  {order?.items &&
+                  Array.isArray(order.items) &&
+                  order.items.length > 0
+                    ? (() => {
+                        // Calculate total from individual items
+                        const subtotal = order.items.reduce(
+                          (total: number, item: any) => {
+                            const price =
+                              parseFloat(item.price.replace(/[^0-9.]/g, "")) ||
+                              0;
+                            const quantity = item.quantity || 1;
+                            return total + price * quantity;
+                          },
+                          0,
+                        );
+
+                        // Format as currency
+                        return `$${subtotal.toFixed(2)}`;
+                      })()
+                    : order?.total || "Processing"}
+                </span>
               </div>
               <div className="text-muted-foreground mt-2 text-sm">
                 <p>Status: {order?.status || "processing"}</p>

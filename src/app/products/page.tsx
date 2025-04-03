@@ -45,41 +45,6 @@ export default async function ProductsPage({
   const material = params.material;
   const sort = params.sort || "featured";
 
-  // For deployed environments, use relative URL path which automatically uses the correct host
-  let apiUrl: URL;
-
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    apiUrl = new URL("/api/products", process.env.NEXT_PUBLIC_APP_URL);
-  } else {
-    // In production, use relative URL which automatically resolves to the correct host
-    apiUrl = new URL("/api/products", "http://placeholder.com");
-    apiUrl.pathname = "/api/products"; // Use only the pathname for fetch
-  }
-
-  if (category) {
-    apiUrl.searchParams.append("category", category);
-  }
-
-  if (price) {
-    apiUrl.searchParams.append("price", price);
-  }
-
-  if (material) {
-    apiUrl.searchParams.append("material", material);
-  }
-
-  if (sort) {
-    apiUrl.searchParams.append("sort", sort);
-  }
-
-  // Use either the full URL or just the relative path with search params
-  const fetchUrl = process.env.NEXT_PUBLIC_APP_URL
-    ? apiUrl.toString()
-    : `${apiUrl.pathname}${apiUrl.search}`;
-
-  const res = await fetch(fetchUrl, { next: { revalidate: 60 } });
-  const products: Product[] = await res.json();
-
   // Format filter labels for display
   const formatPriceLabel = (priceParam: string) => {
     switch (priceParam) {
@@ -142,6 +107,49 @@ export default async function ProductsPage({
         return "Featured";
     }
   };
+
+  // Build query string manually - simpler approach
+  let queryString = "";
+
+  if (category)
+    queryString += `${queryString ? "&" : ""}category=${encodeURIComponent(category)}`;
+  if (price)
+    queryString += `${queryString ? "&" : ""}price=${encodeURIComponent(price)}`;
+  if (material)
+    queryString += `${queryString ? "&" : ""}material=${encodeURIComponent(material)}`;
+  if (sort)
+    queryString += `${queryString ? "&" : ""}sort=${encodeURIComponent(sort)}`;
+
+  // Create API endpoint URL without relying on URL object
+  const baseApiPath = "/api/products";
+  const fetchUrl = queryString ? `${baseApiPath}?${queryString}` : baseApiPath;
+
+  console.log("Fetching products from:", fetchUrl);
+
+  // Default empty array as fallback
+  let products: Product[] = [];
+
+  try {
+    // Use absolute URL based on headers or environment variable
+    const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
+    const host = process.env.NEXT_PUBLIC_APP_URL || "localhost:3000";
+    const absoluteUrl = `${protocol}://${host}${fetchUrl}`;
+
+    console.log("Fetching from absolute URL:", absoluteUrl);
+
+    const res = await fetch(absoluteUrl, { next: { revalidate: 60 } });
+
+    if (!res.ok) {
+      console.error("Error fetching products:", res.status, res.statusText);
+      // Continue with empty products array
+    } else {
+      products = await res.json();
+      console.log(`Successfully fetched ${products.length} products`);
+    }
+  } catch (error) {
+    console.error("Error in ProductsPage:", error);
+    // Continue with empty products array
+  }
 
   return (
     <div className="container mx-auto px-4 md:px-6">

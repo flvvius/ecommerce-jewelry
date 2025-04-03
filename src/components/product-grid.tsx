@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Heart, ShoppingCart, PackageOpen } from "lucide-react";
 import { Button } from "~/components/ui/button";
 import { Badge } from "~/components/ui/badge";
@@ -77,14 +78,18 @@ export default function ProductGrid({ products }: ProductGridProps) {
 
   return (
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {products.map((product) => (
+      {products.map((product, index) => (
         <div key={product.id} className="group relative">
           <div className="bg-muted aspect-square overflow-hidden rounded-lg">
             <Link href={`/products/${product.slug}`}>
-              <img
+              <Image
                 src={product.image || "/placeholder.svg"}
                 alt={product.name}
+                width={300}
+                height={300}
                 className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                priority={index < 4}
+                sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
               />
             </Link>
             <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">

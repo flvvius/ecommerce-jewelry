@@ -1,15 +1,26 @@
 import Link from "next/link";
-import { ArrowRight, ShoppingBag } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight } from "lucide-react";
+import { Suspense } from "react";
+import dynamic from "next/dynamic";
 
 import { Button } from "~/components/ui/button";
-import FeaturedProducts from "~/components/featured-products";
+import FallbackFeaturedProducts from "~/components/fallback-featured-products";
 import HeroSection from "~/components/hero-section";
 import CategorySection from "~/components/category-section";
 import TestimonialSection from "~/components/testimonial-section";
 // import { db } from "~/server/db";
 
-export default async function Home() {
+// Dynamically import the FeaturedProductsServer component with a fallback
+const FeaturedProductsServer = dynamic(
+  () => import("~/components/featured-products-server"),
+  {
+    loading: () => <FallbackFeaturedProducts />,
+    ssr: true,
+  },
+);
 
+export default function Home() {
   // const posts = await db.query.products.findMany();
   // console.log(posts);
 
@@ -17,7 +28,12 @@ export default async function Home() {
     <>
       <HeroSection />
       <CategorySection />
-      <FeaturedProducts />
+
+      {/* Use Suspense as a safety net for data fetching */}
+      <Suspense fallback={<FallbackFeaturedProducts />}>
+        <FeaturedProductsServer />
+      </Suspense>
+
       <section className="bg-muted/50 py-16 md:py-24">
         <div className="container mx-auto max-w-screen-xl px-4 md:px-6">
           <div className="grid items-center gap-6 lg:grid-cols-2 lg:gap-12">
@@ -49,9 +65,11 @@ export default async function Home() {
               </div>
             </div>
             <div className="aspect-video overflow-hidden rounded-xl">
-              <img
-                src="/placeholder.svg?height=720&width=1280"
+              <Image
+                src="/images/handcrafted.jpg"
                 alt="Jewelry crafting process"
+                width={1280}
+                height={720}
                 className="h-full w-full object-cover"
               />
             </div>

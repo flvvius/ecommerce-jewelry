@@ -22,6 +22,7 @@ import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
 import CheckoutAddressForm from "~/components/checkout-address-form";
 import type { ShippingAddressData } from "~/components/checkout-address-form";
+import { useCart } from "~/context/cart-context";
 
 // Define the CartItem type to match your API response
 type CartItem = {
@@ -249,11 +250,15 @@ export default function CartPage() {
             {cartItems.map((item) => (
               <div key={item.id} className="flex gap-4 py-4">
                 <div className="bg-muted h-24 w-24 flex-shrink-0 overflow-hidden rounded-md">
-                  <img
-                    src={item.image || "/placeholder.svg"}
-                    alt={item.name}
-                    className="h-full w-full object-cover"
-                  />
+                  <Link href={`/products/${item.slug}`}>
+                    <Image
+                      src={item.image || "/placeholder.svg"}
+                      alt={item.name}
+                      width={80}
+                      height={80}
+                      className="h-20 w-20 rounded-md object-cover"
+                    />
+                  </Link>
                 </div>
                 <div className="flex flex-1 flex-col">
                   <div className="flex justify-between">

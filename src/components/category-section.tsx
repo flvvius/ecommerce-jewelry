@@ -1,25 +1,26 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function CategorySection() {
   const categories = [
     {
       name: "Necklaces",
-      image: "/placeholder.svg?height=600&width=600",
+      image: "/images/category-necklaces.jpg",
       link: "/products?category=necklaces",
     },
     {
       name: "Rings",
-      image: "/placeholder.svg?height=600&width=600",
+      image: "/images/category-rings.jpg",
       link: "/products?category=rings",
     },
     {
       name: "Earrings",
-      image: "/placeholder.svg?height=600&width=600",
+      image: "/images/category-earrings.jpg",
       link: "/products?category=earrings",
     },
     {
       name: "Bracelets",
-      image: "/placeholder.svg?height=600&width=600",
+      image: "/images/category-bracelets.jpg",
       link: "/products?category=bracelets",
     },
   ];
@@ -45,9 +46,11 @@ export default function CategorySection() {
               className="group relative overflow-hidden rounded-xl"
             >
               <div className="absolute inset-0 z-10 bg-black/30 transition-colors group-hover:bg-black/40" />
-              <img
-                src={category.image || "/placeholder.svg"}
+              <Image
+                src={category.image}
                 alt={category.name}
+                width={300}
+                height={300}
                 className="aspect-square w-full object-cover transition-transform duration-500 group-hover:scale-110"
               />
               <div className="absolute inset-0 z-20 flex items-center justify-center">

@@ -9,37 +9,46 @@ export default function Navbar() {
   return (
     <header className="bg-background/95 supports-[backdrop-filter]:bg-background/60 sticky top-0 z-50 w-full border-b backdrop-blur">
       <div className="container mx-auto flex h-16 items-center justify-between px-4 md:px-6">
-        <Link href="/" className="flex items-center space-x-2">
+        <Link
+          href="/"
+          className="flex items-center space-x-2"
+          legacyBehavior={false}
+        >
           <span className="text-xl font-bold">Lumina</span>
         </Link>
         <nav className="hidden gap-6 md:flex">
           <Link
             href="/products"
             className="hover:text-primary text-sm font-medium transition-colors"
+            legacyBehavior={false}
           >
             Shop All
           </Link>
           <Link
             href="/products?category=necklaces"
             className="hover:text-primary text-sm font-medium transition-colors"
+            legacyBehavior={false}
           >
             Necklaces
           </Link>
           <Link
             href="/products?category=rings"
             className="hover:text-primary text-sm font-medium transition-colors"
+            legacyBehavior={false}
           >
             Rings
           </Link>
           <Link
             href="/products?category=earrings"
             className="hover:text-primary text-sm font-medium transition-colors"
+            legacyBehavior={false}
           >
             Earrings
           </Link>
           <Link
             href="/products?category=bracelets"
             className="hover:text-primary text-sm font-medium transition-colors"
+            legacyBehavior={false}
           >
             Bracelets
           </Link>
@@ -51,6 +60,7 @@ export default function Navbar() {
             <Link
               href="/account"
               className="hover:text-primary mr-2 hidden text-sm font-medium transition-colors md:flex"
+              legacyBehavior={false}
             >
               My Account
             </Link>
