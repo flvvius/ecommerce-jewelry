@@ -36,8 +36,17 @@ const globalForDb = globalThis as unknown as {
   conn: postgres.Sql | undefined;
 };
 
-const conn = globalForDb.conn ?? postgres(env.DATABASE_URL);
-if (env.NODE_ENV !== "production") globalForDb.conn = conn;
+// Try to get the DATABASE_URL directly from process.env first, then fall back to env
+const databaseUrl = process.env.DATABASE_URL || env.DATABASE_URL;
+
+if (!databaseUrl) {
+  throw new Error("DATABASE_URL is not defined");
+}
+
+console.log("Using database URL:", databaseUrl.substring(0, 20) + "...");
+
+const conn = globalForDb.conn ?? postgres(databaseUrl);
+if (process.env.NODE_ENV !== "production") globalForDb.conn = conn;
 
 export const db = drizzle(conn, {
   schema: {

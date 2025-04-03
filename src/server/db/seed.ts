@@ -1,15 +1,23 @@
 import { db } from "./index";
 import { products, productImages } from "./schema";
+import * as fs from "fs";
+
+const logToFile = (message: string) => {
+  const logMessage = `${new Date().toISOString()}: ${message}\n`;
+  console.log(message);
+  fs.appendFileSync("seed-log.txt", logMessage);
+};
 
 export async function seed() {
   try {
-    console.log("Starting seed process...");
+    logToFile("Starting seed process...");
     // Clear existing data
-    console.log("Deleting existing data...");
+    logToFile("Deleting existing data...");
     await db.delete(productImages);
     await db.delete(products);
+    logToFile("Existing data deleted successfully.");
 
-    console.log("Inserting products with materials...");
+    logToFile("Inserting products with materials...");
     // Insert products
     const insertedProducts = await db
       .insert(products)
@@ -121,76 +129,88 @@ export async function seed() {
       ])
       .returning();
 
-    console.log("Inserted products:", insertedProducts);
-    console.log("Inserting product images...");
+    logToFile(`Inserted ${insertedProducts.length} products successfully.`);
+    logToFile("Inserting product images...");
 
     // Insert product images
-    await db.insert(productImages).values([
-      {
-        productId: insertedProducts[0]!.id,
-        url: "/placeholder.svg?height=600&width=600",
-        altText: "Diamond Pendant Necklace",
-        isDefault: true,
-        sortOrder: 0,
-      },
-      {
-        productId: insertedProducts[1]!.id,
-        url: "/placeholder.svg?height=600&width=600",
-        altText: "Gold Hoop Earrings",
-        isDefault: true,
-        sortOrder: 0,
-      },
-      {
-        productId: insertedProducts[2]!.id,
-        url: "/placeholder.svg?height=600&width=600",
-        altText: "Sapphire Tennis Bracelet",
-        isDefault: true,
-        sortOrder: 0,
-      },
-      {
-        productId: insertedProducts[3]!.id,
-        url: "/placeholder.svg?height=600&width=600",
-        altText: "Emerald Cut Engagement Ring",
-        isDefault: true,
-        sortOrder: 0,
-      },
-      {
-        productId: insertedProducts[4]!.id,
-        url: "/placeholder.svg?height=600&width=600",
-        altText: "Pearl Drop Earrings",
-        isDefault: true,
-        sortOrder: 0,
-      },
-      {
-        productId: insertedProducts[5]!.id,
-        url: "/placeholder.svg?height=600&width=600",
-        altText: "Rose Gold Chain Bracelet",
-        isDefault: true,
-        sortOrder: 0,
-      },
-      {
-        productId: insertedProducts[6]!.id,
-        url: "/placeholder.svg?height=600&width=600",
-        altText: "Vintage Inspired Necklace",
-        isDefault: true,
-        sortOrder: 0,
-      },
-      {
-        productId: insertedProducts[7]!.id,
-        url: "/placeholder.svg?height=600&width=600",
-        altText: "Stacking Rings Set",
-        isDefault: true,
-        sortOrder: 0,
-      },
-    ]);
+    const insertedImages = await db
+      .insert(productImages)
+      .values([
+        {
+          productId: insertedProducts[0]!.id,
+          url: "/images/jewelry/diamond-pendant-necklace.jpg",
+          altText: "Diamond Pendant Necklace",
+          isDefault: true,
+          sortOrder: 0,
+        },
+        {
+          productId: insertedProducts[1]!.id,
+          url: "/images/jewelry/gold-hoop-earrings.jpg",
+          altText: "Gold Hoop Earrings",
+          isDefault: true,
+          sortOrder: 0,
+        },
+        {
+          productId: insertedProducts[2]!.id,
+          url: "/images/jewelry/sapphire-tennis-bracelet.jpg",
+          altText: "Sapphire Tennis Bracelet",
+          isDefault: true,
+          sortOrder: 0,
+        },
+        {
+          productId: insertedProducts[3]!.id,
+          url: "/images/jewelry/emerald-cut-engagement-ring.jpg",
+          altText: "Emerald Cut Engagement Ring",
+          isDefault: true,
+          sortOrder: 0,
+        },
+        {
+          productId: insertedProducts[4]!.id,
+          url: "/images/jewelry/pearl-drop-earrings.jpg",
+          altText: "Pearl Drop Earrings",
+          isDefault: true,
+          sortOrder: 0,
+        },
+        {
+          productId: insertedProducts[5]!.id,
+          url: "/images/jewelry/rose-gold-chain-bracelet.jpg",
+          altText: "Rose Gold Chain Bracelet",
+          isDefault: true,
+          sortOrder: 0,
+        },
+        {
+          productId: insertedProducts[6]!.id,
+          url: "/images/jewelry/vintage-inspired-necklace.jpg",
+          altText: "Vintage Inspired Necklace",
+          isDefault: true,
+          sortOrder: 0,
+        },
+        {
+          productId: insertedProducts[7]!.id,
+          url: "/images/jewelry/stacking-rings-set.jpg",
+          altText: "Stacking Rings Set",
+          isDefault: true,
+          sortOrder: 0,
+        },
+      ])
+      .returning();
+
+    logToFile(`Inserted ${insertedImages.length} product images successfully.`);
 
     // Verify products with materials
     const productsWithMaterials = await db.select().from(products);
-    console.log("Products with materials:", productsWithMaterials);
+    logToFile(
+      `Verification: Found ${productsWithMaterials.length} products with materials in the database.`,
+    );
 
-    console.log("Seed data inserted successfully");
+    logToFile("Seed data inserted successfully");
   } catch (error) {
-    console.error("Error seeding database:", error);
+    const errorMsg = `Error seeding database: ${error}`;
+    console.error(errorMsg);
+    fs.appendFileSync(
+      "seed-log.txt",
+      `${new Date().toISOString()}: ERROR - ${errorMsg}\n`,
+    );
     throw error;
   }
 }
