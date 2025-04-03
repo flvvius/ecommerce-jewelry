@@ -130,10 +130,19 @@ export default async function ProductsPage({
   let products: Product[] = [];
 
   try {
-    // Use absolute URL based on headers or environment variable
-    const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
-    const host = process.env.NEXT_PUBLIC_APP_URL || "localhost:3000";
-    const absoluteUrl = `${protocol}://${host}${fetchUrl}`;
+    // Fix URL construction to handle when NEXT_PUBLIC_APP_URL already includes protocol
+    let absoluteUrl;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+    if (appUrl) {
+      // If appUrl is already a complete URL, use it directly
+      absoluteUrl = appUrl.includes("://")
+        ? `${appUrl}${fetchUrl}`
+        : `https://${appUrl}${fetchUrl}`;
+    } else {
+      // Fallback for local development
+      absoluteUrl = `http://localhost:3000${fetchUrl}`;
+    }
 
     console.log("Fetching from absolute URL:", absoluteUrl);
 

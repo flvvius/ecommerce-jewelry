@@ -6,13 +6,19 @@ export default async function FeaturedProductsServer() {
   let products = [];
 
   try {
-    // Get the base URL from env or use default - use the actual deployed URL in production
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL
-      ? `${process.env.NEXT_PUBLIC_APP_URL}/api/products`
-      : `http://localhost:3000/api/products`;
+    // Fix URL construction to handle when NEXT_PUBLIC_APP_URL already includes protocol
+    let apiUrl;
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
 
-    // Construct full URL with params
-    const apiUrl = `${baseUrl}?featured=true`;
+    if (appUrl) {
+      // If appUrl is already a complete URL, use it directly
+      apiUrl = appUrl.includes("://")
+        ? `${appUrl}/api/products?featured=true`
+        : `https://${appUrl}/api/products?featured=true`;
+    } else {
+      // Fallback for local development
+      apiUrl = "http://localhost:3000/api/products?featured=true";
+    }
 
     console.log("Fetching featured products from:", apiUrl);
 

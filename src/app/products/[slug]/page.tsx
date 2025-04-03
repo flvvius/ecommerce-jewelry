@@ -163,10 +163,19 @@ export default async function ProductPage({ params }: PageParams) {
 
 // Helper function to fetch product data
 async function fetchProduct(slug: string) {
-  // Use absolute URL to avoid URL parsing issues
-  const protocol = process.env.NODE_ENV === "development" ? "http" : "https";
-  const host = process.env.NEXT_PUBLIC_APP_URL || "localhost:3000";
-  const apiUrl = `${protocol}://${host}/api/products/${slug}`;
+  // Fix URL construction to handle when NEXT_PUBLIC_APP_URL already includes protocol
+  let apiUrl;
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+
+  if (appUrl) {
+    // If appUrl is already a complete URL, use it directly
+    apiUrl = appUrl.includes("://")
+      ? `${appUrl}/api/products/${slug}`
+      : `https://${appUrl}/api/products/${slug}`;
+  } else {
+    // Fallback for local development
+    apiUrl = `http://localhost:3000/api/products/${slug}`;
+  }
 
   console.log("Fetching product data from:", apiUrl);
 
