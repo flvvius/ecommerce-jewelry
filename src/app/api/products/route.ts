@@ -16,6 +16,15 @@ const priceColumn = sql`${products.price}::numeric`;
 
 export async function GET(request: NextRequest) {
   let retries = 3;
+
+  // Extract parameters with defaults - defined at function level for catch block access
+  let category: string | null = null;
+  let featured: string | null = null;
+  let sort: string = "featured";
+  let price: string | null = null;
+  let material: string | null = null;
+  let slug: string | null = null;
+
   while (retries > 0) {
     try {
       // First verify database connection is working
@@ -71,12 +80,12 @@ export async function GET(request: NextRequest) {
       }
 
       // Extract parameters with defaults
-      const category = searchParams.get("category");
-      const featured = searchParams.get("featured");
-      const sort = searchParams.get("sort") || "featured";
-      const price = searchParams.get("price");
-      const material = searchParams.get("material");
-      const slug = searchParams.get("slug");
+      category = searchParams.get("category");
+      featured = searchParams.get("featured");
+      sort = searchParams.get("sort") || "featured";
+      price = searchParams.get("price");
+      material = searchParams.get("material");
+      slug = searchParams.get("slug");
 
       if (material) {
         console.log("Searching for material:", material);
@@ -178,23 +187,87 @@ export async function GET(request: NextRequest) {
       // If no results from database, return fallback data
       if (!result || result.length === 0) {
         console.log("No products found in database, using fallback data");
-        let filteredProducts = getAllFallbackProducts();
+        let fallbackData = getAllFallbackProducts();
 
-        // Apply appropriate filters as above
+        // Apply filters to fallback data
         if (category) {
-          filteredProducts = filteredProducts.filter(
-            (p) => p.category === category,
-          );
+          fallbackData = fallbackData.filter((p) => p.category === category);
         }
 
         if (featured === "true") {
-          filteredProducts = filteredProducts.filter((p) => p.isFeatured);
+          fallbackData = fallbackData.filter((p) => p.isFeatured);
         }
 
-        // Process images to add absolute URLs
-        filteredProducts = addAbsoluteUrlsToImages(filteredProducts) as any[];
+        // Handle material filter
+        if (material) {
+          fallbackData = fallbackData.filter(
+            (p) =>
+              p.material &&
+              p.material.toLowerCase().includes(material?.toLowerCase() || ""),
+          );
+        }
 
-        return NextResponse.json(filteredProducts);
+        // Handle price filter
+        if (price) {
+          const numericPrice = (p: any) => parseFloat(p.price);
+
+          switch (price) {
+            case "under-500":
+              fallbackData = fallbackData.filter((p) => numericPrice(p) < 500);
+              break;
+            case "500-1000":
+              fallbackData = fallbackData.filter(
+                (p) => numericPrice(p) >= 500 && numericPrice(p) <= 1000,
+              );
+              break;
+            case "1000-2000":
+              fallbackData = fallbackData.filter(
+                (p) => numericPrice(p) >= 1000 && numericPrice(p) <= 2000,
+              );
+              break;
+            case "over-2000":
+              fallbackData = fallbackData.filter((p) => numericPrice(p) > 2000);
+              break;
+          }
+        }
+
+        // Apply sorting
+        switch (sort) {
+          case "price-low-high":
+            fallbackData.sort(
+              (a, b) => parseFloat(a.price) - parseFloat(b.price),
+            );
+            break;
+          case "price-high-low":
+            fallbackData.sort(
+              (a, b) => parseFloat(b.price) - parseFloat(a.price),
+            );
+            break;
+          case "newest":
+            fallbackData.sort((a, b) => b.id - a.id);
+            break;
+          default:
+            fallbackData.sort((a, b) => {
+              if (a.isFeatured === b.isFeatured) {
+                return b.id - a.id;
+              }
+              return a.isFeatured ? -1 : 1;
+            });
+            break;
+        }
+
+        // Add image paths
+        fallbackData = fallbackData.map((product) => ({
+          ...product,
+          images: [
+            {
+              url: `/images/jewelry/${product.slug}.jpg`,
+              altText: product.name,
+            },
+          ],
+        }));
+
+        return NextResponse.json(addAbsoluteUrlsToImages(fallbackData));
       }
 
       // Map the results to include proper JSON for images
@@ -261,7 +334,79 @@ export async function GET(request: NextRequest) {
       }
 
       // Use fallback data as the last resort
-      const fallbackData = getAllFallbackProducts().map((product) => ({
+      console.log("Using fallback data due to persistent errors");
+
+      let fallbackData = getAllFallbackProducts();
+
+      // Apply filters to fallback data
+      if (category) {
+        fallbackData = fallbackData.filter((p) => p.category === category);
+      }
+
+      if (featured === "true") {
+        fallbackData = fallbackData.filter((p) => p.isFeatured);
+      }
+
+      // Handle material filter
+      if (material) {
+        fallbackData = fallbackData.filter(
+          (p) =>
+            p.material &&
+            p.material.toLowerCase().includes(material?.toLowerCase() || ""),
+        );
+      }
+
+      // Handle price filter
+      if (price) {
+        const numericPrice = (p: any) => parseFloat(p.price);
+
+        switch (price) {
+          case "under-500":
+            fallbackData = fallbackData.filter((p) => numericPrice(p) < 500);
+            break;
+          case "500-1000":
+            fallbackData = fallbackData.filter(
+              (p) => numericPrice(p) >= 500 && numericPrice(p) <= 1000,
+            );
+            break;
+          case "1000-2000":
+            fallbackData = fallbackData.filter(
+              (p) => numericPrice(p) >= 1000 && numericPrice(p) <= 2000,
+            );
+            break;
+          case "over-2000":
+            fallbackData = fallbackData.filter((p) => numericPrice(p) > 2000);
+            break;
+        }
+      }
+
+      // Apply sorting
+      switch (sort) {
+        case "price-low-high":
+          fallbackData.sort(
+            (a, b) => parseFloat(a.price) - parseFloat(b.price),
+          );
+          break;
+        case "price-high-low":
+          fallbackData.sort(
+            (a, b) => parseFloat(b.price) - parseFloat(a.price),
+          );
+          break;
+        case "newest":
+          fallbackData.sort((a, b) => b.id - a.id);
+          break;
+        default:
+          fallbackData.sort((a, b) => {
+            if (a.isFeatured === b.isFeatured) {
+              return b.id - a.id;
+            }
+            return a.isFeatured ? -1 : 1;
+          });
+          break;
+      }
+
+      // Add image paths
+      fallbackData = fallbackData.map((product) => ({
         ...product,
         images: [
           {
@@ -270,7 +415,6 @@ export async function GET(request: NextRequest) {
           },
         ],
       }));
-      console.log("Using fallback data due to persistent errors");
 
       return NextResponse.json(addAbsoluteUrlsToImages(fallbackData));
     }

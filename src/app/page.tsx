@@ -25,26 +25,7 @@ export default function Home() {
   // console.log(posts);
 
   return (
-    <main>
-      {/* DEBUG - Only shown in development */}
-      {process.env.NODE_ENV === "development" && (
-        <div className="container mx-auto my-4 rounded-lg border border-red-300 bg-red-50 p-4 text-sm">
-          <h2 className="font-bold">
-            Debug Info (only visible in development):
-          </h2>
-          <ul className="mt-2 list-disc pl-5">
-            <li>NODE_ENV: {process.env.NODE_ENV}</li>
-            <li>APP_URL: {process.env.NEXT_PUBLIC_APP_URL || "Not set"}</li>
-            <li>VERCEL_URL: {process.env.VERCEL_URL || "Not set"}</li>
-            <li>
-              Base URL used:{" "}
-              {process.env.NEXT_PUBLIC_APP_URL ||
-                `https://${process.env.VERCEL_URL || "localhost:3000"}`}
-            </li>
-          </ul>
-        </div>
-      )}
-
+    <>
       <HeroSection />
       <CategorySection />
 
@@ -98,7 +79,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="bg-muted/50 py-16 md:py-24">
+      <section className="bg-muted py-16 md:py-24" style={{ opacity: 0.5 }}>
         <div className="container mx-auto max-w-screen-xl px-4 md:px-6">
           <div className="grid items-center gap-6 lg:grid-cols-2 lg:gap-12">
             <div className="space-y-4">
@@ -154,6 +135,6 @@ export default function Home() {
         </div>
       </section>
       <TestimonialSection />
-    </main>
+    </>
   );
 }
