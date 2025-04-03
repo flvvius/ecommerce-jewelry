@@ -122,35 +122,37 @@ export default async function ProductsPage({
 
   // Create API endpoint URL without relying on URL object
   const baseApiPath = "/api/products";
-  const fetchUrl = queryString ? `${baseApiPath}?${queryString}` : baseApiPath;
-
-  console.log("Fetching products from:", fetchUrl);
 
   // Default empty array as fallback
   let products: Product[] = [];
 
   try {
-    // Fix URL construction to handle when NEXT_PUBLIC_APP_URL already includes protocol
-    let absoluteUrl;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    // For Next.js server components, we need to use absolute URLs
+    const baseUrl =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3000"
+        : process.env.NEXT_PUBLIC_APP_URL ||
+          `https://${process.env.VERCEL_URL || "localhost:3000"}`;
 
-    if (appUrl) {
-      // If appUrl is already a complete URL, use it directly
-      absoluteUrl = appUrl.includes("://")
-        ? `${appUrl}${fetchUrl}`
-        : `https://${appUrl}${fetchUrl}`;
-    } else {
-      // Fallback for local development
-      absoluteUrl = `http://localhost:3000${fetchUrl}`;
-    }
+    // Construct the full URL ensuring no double slashes
+    const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    const cleanApiPath = baseApiPath.startsWith("/")
+      ? baseApiPath
+      : `/${baseApiPath}`;
+    const absoluteUrl = `${cleanBaseUrl}${cleanApiPath}${queryString ? `?${queryString}` : ""}`;
 
-    console.log("Fetching from absolute URL:", absoluteUrl);
+    console.log("Fetching with absolute URL:", absoluteUrl);
 
     const res = await fetch(absoluteUrl, { next: { revalidate: 60 } });
 
     if (!res.ok) {
       console.error("Error fetching products:", res.status, res.statusText);
-      // Continue with empty products array
+      try {
+        const errorData = await res.json();
+        console.error("Error details:", errorData);
+      } catch (jsonError) {
+        // Continue with empty products array if we can't parse the error
+      }
     } else {
       products = await res.json();
       console.log(`Successfully fetched ${products.length} products`);

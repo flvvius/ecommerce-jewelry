@@ -13,6 +13,8 @@ interface AddToCartButtonProps {
     price: number;
     image?: string;
     description?: string;
+    slug: string;
+    images?: { url: string }[];
   };
 }
 
@@ -53,10 +55,18 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
         id: product.id,
         productId: product.id,
         name: product.name,
-        price: product.price,
-        image: product.image || "/placeholder.svg",
+        price: parseFloat(
+          typeof product.price === "string"
+            ? product.price
+            : product.price.toString(),
+        ),
+        image:
+          product.images?.[0]?.url ||
+          `/images/jewelry/${product.slug}.jpg` ||
+          "/placeholder.svg",
         quantity,
         description: product.description,
+        slug: product.slug,
       });
 
       toast(`${quantity} × ${product.name} has been added to your cart.`, {

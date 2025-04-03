@@ -49,6 +49,14 @@ export default function Footer() {
                   Bracelets
                 </Link>
               </li>
+              <li>
+                <Link
+                  href="/gift-guide"
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Gift Guide
+                </Link>
+              </li>
             </ul>
           </div>
           <div className="space-y-4">

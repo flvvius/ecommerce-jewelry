@@ -2,7 +2,8 @@ import { Stripe } from "stripe";
 import { NextResponse } from "next/server";
 import { db } from "~/server/db";
 import { carts, orders, orderItems, addresses } from "~/server/db/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq } from "drizzle-orm/expressions";
+import { inArray } from "drizzle-orm/sql";
 import { cookies } from "next/headers";
 import { products } from "~/server/db/schema";
 
@@ -29,6 +30,7 @@ export async function POST(request: Request) {
     const items = body.items as CartItem[];
     const baseUrl = request.headers.get("host") || "";
     const shippingAddressId = body.metadata?.shippingAddressId;
+    const shippingAddressJson = body.metadata?.shippingAddress;
 
     // More reliable way to determine origin
     const protocol = baseUrl.includes("localhost") ? "http" : "https";
@@ -62,40 +64,74 @@ export async function POST(request: Request) {
         }
       } catch (error) {
         console.error("Error fetching shipping address:", error);
+
+        // Check if we have a JSON string version of the address as fallback
+        if (shippingAddressJson) {
+          try {
+            shippingAddress = JSON.parse(shippingAddressJson);
+          } catch (parseError) {
+            console.error(
+              "Error parsing shipping address from JSON:",
+              parseError,
+            );
+          }
+        }
+      }
+    } else if (shippingAddressJson) {
+      // Handle address from JSON if no ID was provided
+      try {
+        shippingAddress = JSON.parse(shippingAddressJson);
+      } catch (parseError) {
+        console.error("Error parsing shipping address from JSON:", parseError);
       }
     }
 
-    // First, verify that all product IDs exist in the database
-    const productIds = items.map((item: any) => item.productId);
-    console.log("Product IDs from cart:", productIds);
+    // Skip product validation if using local cart
+    let validItems = items;
+    const isLocalCart =
+      body.cartSessionId?.startsWith("local_") ||
+      items.some((item) => String(item.id).startsWith("local_"));
 
-    const existingProducts = await db
-      .select({ id: products.id })
-      .from(products)
-      .where(inArray(products.id, productIds));
+    if (!isLocalCart) {
+      try {
+        // First, verify that all product IDs exist in the database
+        const productIds = items.map((item) => Number(item.productId));
+        console.log("Product IDs from cart:", productIds);
 
-    console.log(
-      "Found product IDs in database:",
-      existingProducts.map((p) => p.id),
-    );
+        const existingProducts = await db
+          .select({ id: products.id })
+          .from(products)
+          .where(inArray(products.id, productIds));
 
-    // Create a map of existing product IDs for quick lookup
-    const validProductIds = new Set(existingProducts.map((p) => p.id));
-
-    // Filter out items with invalid product IDs
-    const validItems = items.filter((item: any) => {
-      const isValid = validProductIds.has(item.productId);
-      if (!isValid) {
         console.log(
-          `Product ID ${item.productId} from item "${item.name}" not found in database`,
+          "Found product IDs in database:",
+          existingProducts.map((p: any) => p.id),
         );
-      }
-      return isValid;
-    });
 
-    console.log(
-      `Found ${validItems.length} valid items out of ${items.length} total`,
-    );
+        // Create a map of existing product IDs for quick lookup
+        const validProductIds = new Set(existingProducts.map((p: any) => p.id));
+
+        // Filter out items with invalid product IDs
+        validItems = items.filter((item) => {
+          const productIdNum = Number(item.productId);
+          const isValid = validProductIds.has(productIdNum);
+          if (!isValid) {
+            console.log(
+              `Product ID ${item.productId} from item "${item.name}" not found in database`,
+            );
+          }
+          return isValid;
+        });
+
+        console.log(
+          `Found ${validItems.length} valid items out of ${items.length} total`,
+        );
+      } catch (dbError) {
+        console.error("Database error during product validation:", dbError);
+        console.log("Proceeding with all items without validation");
+        validItems = items;
+      }
+    }
 
     if (validItems.length === 0) {
       return NextResponse.json(
@@ -214,6 +250,7 @@ export async function POST(request: Request) {
     const session = await stripe.checkout.sessions.create(checkoutParams);
 
     // Create a pending order in the database
+    let orderRecord = null;
     try {
       // Insert the order
       const [order] = await db
@@ -232,6 +269,8 @@ export async function POST(request: Request) {
         })
         .returning();
 
+      orderRecord = order;
+
       // Insert order items
       if (order) {
         await db.insert(orderItems).values(
@@ -248,20 +287,20 @@ export async function POST(request: Request) {
         );
       }
     } catch (dbError: any) {
-      console.error("Database error when creating order:", dbError);
-      // Still return the Stripe session even if order creation fails
-      // The order can be created later when the webhook is received
+      console.error("Error creating order in database:", dbError);
+      // Continue with checkout even if database order creation fails
+      // We'll handle this in the webhook
     }
 
-    return NextResponse.json({ id: session.id, url: session.url });
-  } catch (error: any) {
+    // Return success with the checkout URL
+    return NextResponse.json({
+      url: session.url,
+      orderId: orderRecord?.id,
+    });
+  } catch (error) {
     console.error("Error creating checkout session:", error);
     return NextResponse.json(
-      {
-        error: {
-          message: error.message || "Failed to create checkout session",
-        },
-      },
+      { error: { message: "Failed to create checkout session" } },
       { status: 500 },
     );
   }

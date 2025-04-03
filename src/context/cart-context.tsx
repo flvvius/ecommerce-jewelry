@@ -33,9 +33,37 @@ type CartContextType = {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+// Helper function to generate a unique ID for local storage cart items
+const generateLocalId = () =>
+  `local_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+// Helper functions for localStorage
+const getLocalCart = (): CartItem[] => {
+  if (typeof window === "undefined") return [];
+
+  try {
+    const stored = localStorage.getItem("localCart");
+    return stored ? JSON.parse(stored) : [];
+  } catch (e) {
+    console.error("Failed to parse local cart:", e);
+    return [];
+  }
+};
+
+const saveLocalCart = (items: CartItem[]) => {
+  if (typeof window === "undefined") return;
+
+  try {
+    localStorage.setItem("localCart", JSON.stringify(items));
+  } catch (e) {
+    console.error("Failed to save local cart:", e);
+  }
+};
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [useLocalCart, setUseLocalCart] = useState(false);
 
   // Load cart from API on initial render
   useEffect(() => {
@@ -47,11 +75,22 @@ export function CartProvider({ children }: { children: ReactNode }) {
         }
         const data = await response.json();
         setItems(data.items || []);
+        setUseLocalCart(false);
       } catch (error) {
-        console.error("Failed to load cart:", error);
-        toast("Failed to load your cart. Please try again.", {
-          duration: 3000,
-        });
+        console.error("Failed to load cart from API:", error);
+        // Fall back to local storage
+        const localCart = getLocalCart();
+        setItems(localCart);
+        setUseLocalCart(true);
+
+        if (localCart.length > 0) {
+          toast.info(
+            "Using offline cart mode. Your cart data is stored locally.",
+            {
+              duration: 5000,
+            },
+          );
+        }
       } finally {
         setIsLoading(false);
       }
@@ -60,9 +99,39 @@ export function CartProvider({ children }: { children: ReactNode }) {
     fetchCart();
   }, []);
 
+  // Sync with localStorage when using local cart
+  useEffect(() => {
+    if (useLocalCart) {
+      saveLocalCart(items);
+    }
+  }, [items, useLocalCart]);
+
   const addItem = async (item: CartItem) => {
     try {
       setIsLoading(true);
+
+      if (useLocalCart) {
+        // Handle locally
+        const existingItemIndex = items.findIndex(
+          (i) => i.productId === item.productId,
+        );
+
+        if (existingItemIndex !== -1) {
+          // Update existing item
+          const updatedItems = [...items];
+          const existingItem = updatedItems[existingItemIndex];
+          if (existingItem) {
+            existingItem.quantity += item.quantity;
+            setItems(updatedItems);
+          }
+        } else {
+          // Add new item with local ID
+          setItems([...items, { ...item, id: generateLocalId() }]);
+        }
+        return;
+      }
+
+      // Try API first
       const response = await fetch("/api/cart", {
         method: "POST",
         headers: {
@@ -83,9 +152,31 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const cartData = await cartResponse.json();
       setItems(cartData.items || []);
     } catch (error) {
-      console.error("Error adding item to cart:", error);
-      toast("Failed to add item to cart. Please try again.", {
-        duration: 3000,
+      console.error("Error adding item to cart via API:", error);
+
+      // Fall back to local storage approach
+      setUseLocalCart(true);
+
+      // Add to local cart
+      const existingItemIndex = items.findIndex(
+        (i) => i.productId === item.productId,
+      );
+
+      if (existingItemIndex !== -1) {
+        // Update existing item
+        const updatedItems = [...items];
+        const existingItem = updatedItems[existingItemIndex];
+        if (existingItem) {
+          existingItem.quantity += item.quantity;
+          setItems(updatedItems);
+        }
+      } else {
+        // Add new item with local ID
+        setItems([...items, { ...item, id: generateLocalId() }]);
+      }
+
+      toast.info("Using offline cart mode. Your cart will be stored locally.", {
+        duration: 5000,
       });
     } finally {
       setIsLoading(false);
@@ -95,6 +186,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const removeItem = async (id: string | number) => {
     try {
       setIsLoading(true);
+
+      if (useLocalCart) {
+        // Handle locally
+        setItems((prevItems) => prevItems.filter((item) => item.id !== id));
+        return;
+      }
+
+      // Try API first
       const response = await fetch(`/api/cart/${id}`, {
         method: "DELETE",
       });
@@ -107,8 +206,13 @@ export function CartProvider({ children }: { children: ReactNode }) {
       setItems((prevItems) => prevItems.filter((item) => item.id !== id));
     } catch (error) {
       console.error("Error removing item from cart:", error);
-      toast("Failed to remove item from cart. Please try again.", {
-        duration: 3000,
+
+      // Fall back to local approach
+      setUseLocalCart(true);
+      setItems((prevItems) => prevItems.filter((item) => item.id !== id));
+
+      toast.info("Using offline cart mode. Your cart will be stored locally.", {
+        duration: 5000,
       });
     } finally {
       setIsLoading(false);
@@ -120,6 +224,18 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
     try {
       setIsLoading(true);
+
+      if (useLocalCart) {
+        // Handle locally
+        setItems((prevItems) =>
+          prevItems.map((item) =>
+            item.id === id ? { ...item, quantity } : item,
+          ),
+        );
+        return;
+      }
+
+      // Try API first
       const response = await fetch(`/api/cart/${id}`, {
         method: "PATCH",
         headers: {
@@ -140,8 +256,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
       );
     } catch (error) {
       console.error("Error updating quantity:", error);
-      toast("Failed to update quantity. Please try again.", {
-        duration: 3000,
+
+      // Fall back to local approach
+      setUseLocalCart(true);
+      setItems((prevItems) =>
+        prevItems.map((item) =>
+          item.id === id ? { ...item, quantity } : item,
+        ),
+      );
+
+      toast.info("Using offline cart mode. Your cart will be stored locally.", {
+        duration: 5000,
       });
     } finally {
       setIsLoading(false);
@@ -149,7 +274,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
   };
 
   const clearCart = () => {
-    // This would ideally call an API to clear the cart
+    if (useLocalCart) {
+      localStorage.removeItem("localCart");
+    }
+    // This would ideally call an API to clear the cart as well
     setItems([]);
   };
 

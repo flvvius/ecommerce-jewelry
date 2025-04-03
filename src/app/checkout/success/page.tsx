@@ -239,14 +239,47 @@ export default function CheckoutSuccessPage() {
                           0,
                         );
 
+                        // Apply shipping cost logic as in cart page
+                        const shipping = subtotal > 100 ? 0 : 10;
+                        const total = subtotal + shipping;
+
                         // Format as currency
-                        return `$${subtotal.toFixed(2)}`;
+                        return `$${total.toFixed(2)}`;
                       })()
                     : order?.total || "Processing"}
                 </span>
               </div>
               <div className="text-muted-foreground mt-2 text-sm">
                 <p>Status: {order?.status || "processing"}</p>
+                {order?.items &&
+                  Array.isArray(order.items) &&
+                  order.items.length > 0 && (
+                    <div className="mt-2">
+                      <p>
+                        Subtotal: $
+                        {order.items
+                          .reduce((total: number, item: any) => {
+                            const price =
+                              parseFloat(item.price.replace(/[^0-9.]/g, "")) ||
+                              0;
+                            const quantity = item.quantity || 1;
+                            return total + price * quantity;
+                          }, 0)
+                          .toFixed(2)}
+                      </p>
+                      <p>
+                        Shipping:{" "}
+                        {order.items.reduce((total: number, item: any) => {
+                          const price =
+                            parseFloat(item.price.replace(/[^0-9.]/g, "")) || 0;
+                          const quantity = item.quantity || 1;
+                          return total + price * quantity;
+                        }, 0) > 100
+                          ? "Free"
+                          : "$10.00"}
+                      </p>
+                    </div>
+                  )}
               </div>
             </div>
           </div>

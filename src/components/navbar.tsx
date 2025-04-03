@@ -4,7 +4,6 @@ import Link from "next/link";
 import { SignInButton, SignedIn, SignedOut, UserButton } from "@clerk/nextjs";
 import { Button } from "~/components/ui/button";
 import CartButton from "~/components/cart-button";
-import { ThemeToggle } from "~/components/theme-toggle";
 
 export default function Navbar() {
   return (
@@ -55,7 +54,6 @@ export default function Navbar() {
           </Link>
         </nav>
         <div className="flex items-center gap-4">
-          <ThemeToggle />
           <CartButton />
           <SignedIn>
             {/* User is signed in */}

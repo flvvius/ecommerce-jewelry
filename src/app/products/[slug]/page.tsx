@@ -163,31 +163,37 @@ export default async function ProductPage({ params }: PageParams) {
 
 // Helper function to fetch product data
 async function fetchProduct(slug: string) {
-  // Fix URL construction to handle when NEXT_PUBLIC_APP_URL already includes protocol
-  let apiUrl;
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+  const baseApiPath = `/api/products/${slug}`;
 
-  if (appUrl) {
-    // If appUrl is already a complete URL, use it directly
-    apiUrl = appUrl.includes("://")
-      ? `${appUrl}/api/products/${slug}`
-      : `https://${appUrl}/api/products/${slug}`;
-  } else {
-    // Fallback for local development
-    apiUrl = `http://localhost:3000/api/products/${slug}`;
-  }
+  try {
+    // For Next.js server components, we need to use absolute URLs
+    const baseUrl =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3000"
+        : process.env.NEXT_PUBLIC_APP_URL ||
+          `https://${process.env.VERCEL_URL || "localhost:3000"}`;
 
-  console.log("Fetching product data from:", apiUrl);
+    // Construct the full URL ensuring no double slashes
+    const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    const cleanApiPath = baseApiPath.startsWith("/")
+      ? baseApiPath
+      : `/${baseApiPath}`;
+    const absoluteUrl = `${cleanBaseUrl}${cleanApiPath}`;
 
-  const res = await fetch(apiUrl, {
-    next: { revalidate: 60 },
-  });
+    console.log("Fetching product with absolute URL:", absoluteUrl);
 
-  if (!res.ok) {
+    const res = await fetch(absoluteUrl, { next: { revalidate: 60 } });
+
+    if (!res.ok) {
+      console.error(`Error fetching product: ${res.status} ${res.statusText}`);
+      return null;
+    }
+
+    return res.json();
+  } catch (error) {
+    console.error("Error in fetchProduct:", error);
     return null;
   }
-
-  return res.json();
 }
 
 // Update the loading component to handle errors

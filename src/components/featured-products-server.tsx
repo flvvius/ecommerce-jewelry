@@ -6,29 +6,28 @@ export default async function FeaturedProductsServer() {
   let products = [];
 
   try {
-    // Fix URL construction to handle when NEXT_PUBLIC_APP_URL already includes protocol
-    let apiUrl;
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL;
+    const baseApiPath = "/api/products";
+    const queryString = "featured=true";
 
-    if (appUrl) {
-      // If appUrl is already a complete URL, use it directly
-      apiUrl = appUrl.includes("://")
-        ? `${appUrl}/api/products?featured=true`
-        : `https://${appUrl}/api/products?featured=true`;
-    } else {
-      // Fallback for local development
-      apiUrl = "http://localhost:3000/api/products?featured=true";
-    }
+    // For Next.js server components, we need to use absolute URLs
+    const baseUrl =
+      process.env.NODE_ENV === "development"
+        ? "http://localhost:3000"
+        : process.env.NEXT_PUBLIC_APP_URL ||
+          `https://${process.env.VERCEL_URL || "localhost:3000"}`;
 
-    console.log("Fetching featured products from:", apiUrl);
+    // Construct the full URL ensuring no double slashes
+    const cleanBaseUrl = baseUrl.endsWith("/") ? baseUrl.slice(0, -1) : baseUrl;
+    const cleanApiPath = baseApiPath.startsWith("/")
+      ? baseApiPath
+      : `/${baseApiPath}`;
+    const absoluteUrl = `${cleanBaseUrl}${cleanApiPath}?${queryString}`;
 
-    // Fetch with proper error handling - using absolute URL
-    const res = await fetch(apiUrl, {
+    console.log("Fetching featured products with absolute URL:", absoluteUrl);
+
+    // Fetch with proper error handling
+    const res = await fetch(absoluteUrl, {
       next: { revalidate: 60 },
-      headers: {
-        // Add cache control headers to prevent stale responses
-        "Cache-Control": "no-cache",
-      },
     });
 
     if (!res.ok) {
@@ -46,12 +45,10 @@ export default async function FeaturedProductsServer() {
         if (product.images && Array.isArray(product.images)) {
           const processedImages = product.images.map((image: any) => {
             if (image.url && image.url.startsWith("/")) {
-              // Convert relative image URLs to absolute using NEXT_PUBLIC_APP_URL
-              const baseImageUrl =
-                process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+              // Convert relative image URLs to absolute using the same base URL
               return {
                 ...image,
-                url: `${baseImageUrl}${image.url}`,
+                url: `${cleanBaseUrl}${image.url}`,
               };
             }
             return image;

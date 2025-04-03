@@ -42,82 +42,21 @@ const stripePromise = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
 
 export default function CartPage() {
   const [isLoading, setIsLoading] = useState(false);
-  const [cartItems, setCartItems] = useState<CartItem[]>([]);
-  const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [isAddressFormOpen, setIsAddressFormOpen] = useState(false);
   const [shippingAddress, setShippingAddress] =
     useState<ShippingAddressData | null>(null);
   const { isSignedIn } = useUser();
 
-  // Fetch cart items on component mount
-  useEffect(() => {
-    const fetchCart = async () => {
-      try {
-        const response = await fetch("/api/cart");
-        if (!response.ok) {
-          throw new Error("Failed to fetch cart");
-        }
-        const data = await response.json();
-        setCartItems(data.items || []);
-      } catch (error) {
-        console.error("Error fetching cart:", error);
-        toast("Failed to load your cart. Please try again.");
-      } finally {
-        setIsInitialLoading(false);
-      }
-    };
+  // Use our updated cart context instead of managing separate state
+  const {
+    items: cartItems,
+    updateQuantity,
+    removeItem,
+    isLoading: isCartLoading,
+    subtotal,
+  } = useCart();
 
-    fetchCart();
-  }, []);
-
-  const updateQuantity = async (id: number, newQuantity: number) => {
-    if (newQuantity < 1) return;
-
-    try {
-      const response = await fetch(`/api/cart/${id}`, {
-        method: "PATCH",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ quantity: newQuantity }),
-      });
-
-      if (response.ok) {
-        setCartItems(
-          cartItems.map((item) =>
-            item.id === id ? { ...item, quantity: newQuantity } : item,
-          ),
-        );
-      } else {
-        toast("Failed to update quantity");
-      }
-    } catch (error) {
-      console.error("Error updating quantity:", error);
-      toast("Failed to update quantity");
-    }
-  };
-
-  const removeItem = async (id: number) => {
-    try {
-      const response = await fetch(`/api/cart/${id}`, {
-        method: "DELETE",
-      });
-
-      if (response.ok) {
-        setCartItems(cartItems.filter((item) => item.id !== id));
-      } else {
-        toast("Failed to remove item");
-      }
-    } catch (error) {
-      console.error("Error removing item:", error);
-      toast("Failed to remove item");
-    }
-  };
-
-  const subtotal = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0,
-  );
+  // Calculate shipping and total
   const shipping = subtotal > 100 ? 0 : 10;
   const total = subtotal + shipping;
 
@@ -146,67 +85,103 @@ export default function CartPage() {
         return;
       }
 
-      // Get the cart session ID from cookies
-      const cartSessionId = document.cookie
+      // Get the cart session ID from cookies (or generate a temporary one for local cart)
+      let cartSessionId = document.cookie
         .split("; ")
         .find((row) => row.startsWith("cartSessionId="))
         ?.split("=")[1];
 
+      // If no cartSessionId, create a temporary one for local cart
+      if (!cartSessionId) {
+        cartSessionId = `local_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        document.cookie = `cartSessionId=${cartSessionId}; path=/; max-age=86400`;
+      }
+
       // First, save the shipping address
-      const addressResponse = await fetch("/api/shipping-address", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          ...shippingAddress,
-          cartSessionId,
-        }),
-      });
-
-      if (!addressResponse.ok) {
-        const addressError = await addressResponse.json();
-        throw new Error(
-          addressError.error || "Failed to save shipping address",
-        );
-      }
-
-      const { address } = await addressResponse.json();
-
-      // Then create the checkout session
-      const response = await fetch("/api/checkout", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          items: cartItems,
-          cartSessionId,
-          metadata: {
-            customerNote: "Standard shipping",
-            shippingAddressId: address.id,
+      try {
+        const addressResponse = await fetch("/api/shipping-address", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
           },
-        }),
-      });
+          body: JSON.stringify({
+            ...shippingAddress,
+            cartSessionId,
+          }),
+        });
 
-      const { url, error } = await response.json();
+        if (!addressResponse.ok) {
+          const addressError = await addressResponse.json();
+          throw new Error(
+            addressError.error || "Failed to save shipping address",
+          );
+        }
 
-      if (error) {
-        toast(error.message || "Checkout Error");
-        return;
+        const { address } = await addressResponse.json();
+
+        // Then create the checkout session
+        const response = await fetch("/api/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            items: cartItems,
+            cartSessionId,
+            metadata: {
+              customerNote: "Standard shipping",
+              shippingAddressId: address.id,
+            },
+          }),
+        });
+
+        const { url, error } = await response.json();
+
+        if (error) {
+          toast(error.message || "Checkout Error");
+          return;
+        }
+
+        window.location.href = url;
+      } catch (addressError) {
+        console.error("Error with address:", addressError);
+
+        // If the address API fails, try direct checkout as fallback
+        const response = await fetch("/api/checkout", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            items: cartItems,
+            cartSessionId,
+            metadata: {
+              customerNote: "Standard shipping",
+              // Include the address directly in the metadata
+              shippingAddress: JSON.stringify(shippingAddress),
+            },
+          }),
+        });
+
+        const { url, error } = await response.json();
+
+        if (error) {
+          toast(error.message || "Checkout Error");
+          return;
+        }
+
+        window.location.href = url;
       }
-
-      window.location.href = url;
     } catch (error) {
       console.error("Error during checkout:", error);
-      toast("Checkout Error");
+      toast("Checkout Error. Please try again.");
     } finally {
       setIsLoading(false);
     }
   };
 
   // Show loading state
-  if (isInitialLoading) {
+  if (isCartLoading) {
     return (
       <div className="container flex items-center justify-center px-4 py-20 md:px-6">
         <div className="text-center">
