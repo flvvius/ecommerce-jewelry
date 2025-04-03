@@ -104,6 +104,15 @@ export async function POST(request: Request) {
       );
     }
 
+    // Calculate cart totals first
+    const subtotal = validItems.reduce(
+      (sum: number, item: any) => sum + item.price * item.quantity,
+      0,
+    );
+    const tax = subtotal * 0.07; // 7% tax rate
+    const shipping = subtotal > 100 ? 0 : 10;
+    const total = subtotal + tax + shipping;
+
     // Prepare checkout session params
     const checkoutParams: Stripe.Checkout.SessionCreateParams = {
       payment_method_types: ["card"],
@@ -152,24 +161,41 @@ export async function POST(request: Request) {
         orderId: `ORD-${Date.now()}`,
         cartSessionId: body.cartSessionId,
       },
+      // Minimal billing address collection
+      billing_address_collection: "auto",
+      // Do not collect shipping address in Stripe
+      shipping_address_collection: undefined,
+      // Note: To enable automatic tax calculation, uncomment the following:
+      // automatic_tax: {
+      //   enabled: true,
+      // },
+      // Add shipping options directly in Stripe
+      shipping_options: [
+        {
+          shipping_rate_data: {
+            display_name: "Free Express Shipping",
+            type: "fixed_amount",
+            fixed_amount: {
+              amount: 0,
+              currency: "usd",
+            },
+            delivery_estimate: {
+              minimum: {
+                unit: "business_day",
+                value: 2,
+              },
+              maximum: {
+                unit: "business_day",
+                value: 4,
+              },
+            },
+          },
+        },
+      ],
     };
 
     // Add shipping address if available
     if (shippingAddress) {
-      checkoutParams.shipping_address_collection = {
-        allowed_countries: [
-          "US",
-          "CA",
-          "GB",
-          "AU",
-          "FR",
-          "DE",
-          "IT",
-          "ES",
-          "JP",
-        ],
-      };
-
       // Pass the shipping address through metadata since direct setting isn't available in types
       checkoutParams.metadata = {
         ...checkoutParams.metadata,
@@ -188,14 +214,6 @@ export async function POST(request: Request) {
     const session = await stripe.checkout.sessions.create(checkoutParams);
 
     // Create a pending order in the database
-    const subtotal = validItems.reduce(
-      (sum: number, item: any) => sum + item.price * item.quantity,
-      0,
-    );
-    const tax = subtotal * 0.07; // 7% tax rate
-    const shipping = subtotal > 100 ? 0 : 10;
-    const total = subtotal + tax + shipping;
-
     try {
       // Insert the order
       const [order] = await db
