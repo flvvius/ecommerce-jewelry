@@ -14,6 +14,11 @@ import {
 } from "~/components/ui/tooltip";
 import { useCart } from "~/context/cart-context";
 import { toast } from "sonner";
+import {
+  getImageUrl,
+  getProductImageFallback,
+  getCompressedProductImage,
+} from "~/lib/image-utils";
 
 type Product = {
   id: string | number;
@@ -80,10 +85,10 @@ export default function ProductGrid({ products }: ProductGridProps) {
     <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {products.map((product, index) => (
         <div key={product.id} className="group relative">
-          <div className="bg-muted aspect-square overflow-hidden rounded-lg">
+          <div className="bg-muted aspect-square overflow-hidden rounded-md">
             <Link href={`/products/${product.slug}`}>
               <Image
-                src={product.image || `/images/jewelry/${product.slug}.jpg`}
+                src={product.image || getProductImageFallback(product.slug)}
                 alt={product.name}
                 width={300}
                 height={300}
@@ -94,10 +99,10 @@ export default function ProductGrid({ products }: ProductGridProps) {
                   // Try compressed version first
                   const imgElement = e.currentTarget as HTMLImageElement;
                   if (!imgElement.src.includes("compressed")) {
-                    imgElement.src = `/images/jewelry/compressed/${product.slug}.jpg`;
+                    imgElement.src = getCompressedProductImage(product.slug);
                   } else if (imgElement.src.includes("compressed")) {
                     // If compressed version fails, use placeholder
-                    imgElement.src = "/placeholder.svg";
+                    imgElement.src = getImageUrl("/placeholder.svg");
                   }
                 }}
               />

@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Separator } from "~/components/ui/separator";
 import AddToCartButton from "~/components/add-to-cart-button";
 import ProductGallery from "~/components/product-gallery";
+import ImageDebug from "~/components/image-debug";
 
 // Define a more specific type for params
 type PageParams = {
@@ -15,6 +16,22 @@ type PageParams = {
     slug: string;
   };
 };
+
+// Loading component for products
+function ProductLoading({ error }: { error?: string } = {}) {
+  return (
+    <div className="flex h-[60vh] items-center justify-center">
+      <div className="text-center">
+        {error ? (
+          <div className="mb-2 text-red-500">{error}</div>
+        ) : (
+          <div className="border-primary mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2"></div>
+        )}
+        <p>{error ? "Please try again later" : "Loading product..."}</p>
+      </div>
+    </div>
+  );
+}
 
 export default async function ProductPage({ params }: PageParams) {
   // We need to await params before using its properties
@@ -28,7 +45,12 @@ export default async function ProductPage({ params }: PageParams) {
     }
 
     return (
-      <div className="container mx-auto px-4 py-8 md:px-6">
+      <div className="container mx-auto px-4 py-12 md:px-6 lg:px-8">
+        {/* Show debug information only in development */}
+        {process.env.NODE_ENV === "development" && (
+          <ImageDebug slug={params.slug} />
+        )}
+
         <div className="text-muted-foreground mb-6 flex items-center gap-1 text-sm">
           <Link href="/" className="hover:text-foreground transition-colors">
             Home
@@ -157,20 +179,4 @@ async function fetchProduct(slug: string) {
     console.error("Error in fetchProduct:", error);
     return null;
   }
-}
-
-// Update the loading component to handle errors
-function ProductLoading({ error }: { error?: string } = {}) {
-  return (
-    <div className="flex h-[60vh] items-center justify-center">
-      <div className="text-center">
-        {error ? (
-          <div className="mb-2 text-red-500">{error}</div>
-        ) : (
-          <div className="border-primary mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-b-2"></div>
-        )}
-        <p>{error ? "Please try again later" : "Loading product..."}</p>
-      </div>
-    </div>
-  );
 }

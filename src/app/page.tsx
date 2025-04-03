@@ -25,7 +25,26 @@ export default function Home() {
   // console.log(posts);
 
   return (
-    <>
+    <main>
+      {/* DEBUG - Only shown in development */}
+      {process.env.NODE_ENV === "development" && (
+        <div className="container mx-auto my-4 rounded-lg border border-red-300 bg-red-50 p-4 text-sm">
+          <h2 className="font-bold">
+            Debug Info (only visible in development):
+          </h2>
+          <ul className="mt-2 list-disc pl-5">
+            <li>NODE_ENV: {process.env.NODE_ENV}</li>
+            <li>APP_URL: {process.env.NEXT_PUBLIC_APP_URL || "Not set"}</li>
+            <li>VERCEL_URL: {process.env.VERCEL_URL || "Not set"}</li>
+            <li>
+              Base URL used:{" "}
+              {process.env.NEXT_PUBLIC_APP_URL ||
+                `https://${process.env.VERCEL_URL || "localhost:3000"}`}
+            </li>
+          </ul>
+        </div>
+      )}
+
       <HeroSection />
       <CategorySection />
 
@@ -121,7 +140,20 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <section className="container mx-auto px-4 py-12 md:px-6">
+        <div className="flex flex-col items-center justify-center space-y-4 text-center">
+          <div className="space-y-2">
+            <h2 className="text-3xl font-bold tracking-tighter sm:text-5xl">
+              Exquisite Craftsmanship
+            </h2>
+            <p className="text-muted-foreground max-w-[900px] md:text-xl/relaxed lg:text-base/relaxed xl:text-xl/relaxed">
+              Each piece of jewelry is handcrafted with precision and care,
+              ensuring exceptional quality and unique character.
+            </p>
+          </div>
+        </div>
+      </section>
       <TestimonialSection />
-    </>
+    </main>
   );
 }

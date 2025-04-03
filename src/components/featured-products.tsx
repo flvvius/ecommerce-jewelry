@@ -14,6 +14,11 @@ import {
 } from "~/components/ui/tooltip";
 import { toast } from "sonner";
 import { useCart } from "~/context/cart-context";
+import {
+  getImageUrl,
+  getProductImageFallback,
+  getCompressedProductImage,
+} from "~/lib/image-utils";
 
 type Product = {
   id: number;
@@ -112,7 +117,7 @@ export default function FeaturedProducts({
               <div className="bg-muted aspect-square overflow-hidden rounded-lg">
                 <Link href={`/products/${product.slug}`}>
                   <Image
-                    src={product.image || `/images/jewelry/${product.slug}.jpg`}
+                    src={product.image || getProductImageFallback(product.slug)}
                     alt={product.name}
                     width={300}
                     height={300}
@@ -123,10 +128,12 @@ export default function FeaturedProducts({
                       // Try compressed version first
                       const imgElement = e.currentTarget as HTMLImageElement;
                       if (!imgElement.src.includes("compressed")) {
-                        imgElement.src = `/images/jewelry/compressed/${product.slug}.jpg`;
+                        imgElement.src = getCompressedProductImage(
+                          product.slug,
+                        );
                       } else if (imgElement.src.includes("compressed")) {
                         // If compressed version fails, use placeholder
-                        imgElement.src = "/placeholder.svg";
+                        imgElement.src = getImageUrl("/placeholder.svg");
                       }
                     }}
                   />

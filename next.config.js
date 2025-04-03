@@ -23,7 +23,13 @@ const config = {
         hostname: '**',
       },
     ],
+    domains: ['ecommerce-jewelry.vercel.app'],
+    unoptimized: process.env.NODE_ENV === 'production',
   },
+  // Configure correct asset prefix for production
+  assetPrefix: process.env.NODE_ENV === 'production' 
+    ? process.env.NEXT_PUBLIC_APP_URL || 'https://ecommerce-jewelry.vercel.app'
+    : undefined,
 };
 
 export default config;

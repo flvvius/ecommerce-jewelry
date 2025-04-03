@@ -2,11 +2,19 @@
 
 import { useState } from "react";
 import Image from "next/image";
+import {
+  getImageUrl,
+  getProductImageFallback,
+  getCompressedProductImage,
+} from "~/lib/image-utils";
 
 interface ProductGalleryProps {
-  images: { url: string; altText?: string }[];
+  images: {
+    url: string;
+    altText?: string;
+  }[];
   productName: string;
-  slug?: string;
+  slug: string;
 }
 
 export default function ProductGallery({
@@ -18,21 +26,21 @@ export default function ProductGallery({
 
   // Get a fallback image URL for a specific index
   const getFallbackImageUrl = (index = 0) => {
-    if (!slug) return "/placeholder.svg";
+    if (!slug) return getImageUrl("/placeholder.svg");
 
     if (index === 0) {
-      // Try different paths in sequence
-      if (imageError[`/images/jewelry/${slug}.jpg`]) {
-        if (imageError[`/images/jewelry/compressed/${slug}.jpg`]) {
-          return "/placeholder.svg";
+      // Try different paths in sequence, ensuring paths always start with /
+      if (imageError[getProductImageFallback(slug)]) {
+        if (imageError[getCompressedProductImage(slug)]) {
+          return getImageUrl("/placeholder.svg");
         }
-        return `/images/jewelry/compressed/${slug}.jpg`;
+        return getCompressedProductImage(slug);
       }
-      return `/images/jewelry/${slug}.jpg`;
+      return getProductImageFallback(slug);
     }
 
     // For secondary images, just use placeholder
-    return "/placeholder.svg";
+    return getImageUrl("/placeholder.svg");
   };
 
   // Handler for image loading errors
@@ -66,7 +74,9 @@ export default function ProductGallery({
       <div className="bg-muted col-span-4 aspect-square overflow-hidden rounded-xl">
         <Image
           src={
-            imageError[images[0].url] ? getFallbackImageUrl() : images[0].url
+            imageError[images[0].url]
+              ? getFallbackImageUrl()
+              : getImageUrl(images[0].url)
           }
           alt={images[0].altText || productName}
           width={800}
@@ -83,7 +93,9 @@ export default function ProductGallery({
         >
           <Image
             src={
-              imageError[image.url] ? getFallbackImageUrl(index + 1) : image.url
+              imageError[image.url]
+                ? getFallbackImageUrl(index + 1)
+                : getImageUrl(image.url)
             }
             alt={image.altText || `${productName} ${index + 1}`}
             width={300}

@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { ShoppingBag, Heart, Minus, Plus } from "lucide-react";
 import { toast } from "sonner";
 import { useCart } from "~/context/cart-context";
+import { getProductImageFallback } from "~/lib/image-utils";
 
 interface AddToCartButtonProps {
   product: {
@@ -56,7 +57,7 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
 
       // If no image provided, use the product slug to construct path
       if (!imageUrl && product.slug) {
-        imageUrl = `/images/jewelry/${product.slug}.jpg`;
+        imageUrl = getProductImageFallback(product.slug);
       }
 
       await addItem({

@@ -181,18 +181,26 @@ export const fallbackProducts: FallbackProductsRecord = {
 export function addAbsoluteUrlsToImages(
   products: FallbackProduct[] | FallbackProduct,
 ): FallbackProduct[] | FallbackProduct {
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+  const baseUrl =
+    process.env.NEXT_PUBLIC_APP_URL ||
+    (typeof process !== "undefined" && process.env.NODE_ENV === "development"
+      ? "http://localhost:3000"
+      : "https://ecommerce-jewelry.vercel.app");
 
   // Helper function to resolve an image path
   const getImageUrl = (productSlug: string) => {
-    // Check all possible paths for images in order of preference
-    const possiblePaths = [
-      `/images/jewelry/${productSlug}.jpg`,
-      `/images/jewelry/compressed/${productSlug}.jpg`,
-      `/placeholder.svg`,
-    ];
+    // Construct path - will be made absolute below
+    return `/images/jewelry/${productSlug}.jpg`;
+  };
 
-    return possiblePaths[0]; // Default to first path, client will fallback if needed
+  // Helper function to ensure a path has a proper absolute URL
+  const ensureAbsoluteUrl = (path: string) => {
+    if (!path) return `${baseUrl}/placeholder.svg`;
+    if (path.startsWith("http")) return path;
+
+    // Add base URL if it's a relative path
+    const normalizedPath = path.startsWith("/") ? path : `/${path}`;
+    return `${baseUrl}${normalizedPath}`;
   };
 
   if (Array.isArray(products)) {
@@ -202,13 +210,11 @@ export function addAbsoluteUrlsToImages(
         product.images.length > 0
           ? product.images.map((image) => ({
               ...image,
-              url: image.url.startsWith("/")
-                ? `${baseUrl}${image.url}`
-                : image.url,
+              url: ensureAbsoluteUrl(image.url),
             }))
           : [
               {
-                url: `${baseUrl}${getImageUrl(product.slug)}`,
+                url: ensureAbsoluteUrl(getImageUrl(product.slug)),
                 altText: product.name,
               },
             ],
@@ -220,13 +226,11 @@ export function addAbsoluteUrlsToImages(
         products.images.length > 0
           ? products.images.map((image) => ({
               ...image,
-              url: image.url.startsWith("/")
-                ? `${baseUrl}${image.url}`
-                : image.url,
+              url: ensureAbsoluteUrl(image.url),
             }))
           : [
               {
-                url: `${baseUrl}${getImageUrl(products.slug)}`,
+                url: ensureAbsoluteUrl(getImageUrl(products.slug)),
                 altText: products.name,
               },
             ],

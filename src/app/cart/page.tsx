@@ -23,6 +23,11 @@ import { useUser } from "@clerk/nextjs";
 import CheckoutAddressForm from "~/components/checkout-address-form";
 import type { ShippingAddressData } from "~/components/checkout-address-form";
 import { useCart } from "~/context/cart-context";
+import {
+  getImageUrl,
+  getProductImageFallback,
+  getCompressedProductImage,
+} from "~/lib/image-utils";
 
 // Define the CartItem type to match your API response
 type CartItem = {
@@ -230,8 +235,8 @@ export default function CartPage() {
                       src={
                         item.image ||
                         (item.slug
-                          ? `/images/jewelry/${item.slug}.jpg`
-                          : "/placeholder.svg")
+                          ? getProductImageFallback(item.slug)
+                          : getImageUrl("/placeholder.svg"))
                       }
                       alt={item.name}
                       width={80}
@@ -244,13 +249,13 @@ export default function CartPage() {
                           item.slug &&
                           !imgElement.src.includes("compressed")
                         ) {
-                          imgElement.src = `/images/jewelry/compressed/${item.slug}.jpg`;
+                          imgElement.src = getCompressedProductImage(item.slug);
                         } else if (
                           imgElement.src.includes("compressed") ||
                           !item.slug
                         ) {
                           // If compressed version fails or no slug, use placeholder
-                          imgElement.src = "/placeholder.svg";
+                          imgElement.src = getImageUrl("/placeholder.svg");
                         }
                       }}
                     />
