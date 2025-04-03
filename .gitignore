@@ -44,3 +44,7 @@ yarn-error.log*
 
 # idea files
 .idea
+
+# Image backups and processing folders
+public/images/jewelry/compressed/
+public/images/jewelry/originals/
