@@ -183,21 +183,53 @@ export function addAbsoluteUrlsToImages(
 ): FallbackProduct[] | FallbackProduct {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
+  // Helper function to resolve an image path
+  const getImageUrl = (productSlug: string) => {
+    // Check all possible paths for images in order of preference
+    const possiblePaths = [
+      `/images/jewelry/${productSlug}.jpg`,
+      `/images/jewelry/compressed/${productSlug}.jpg`,
+      `/placeholder.svg`,
+    ];
+
+    return possiblePaths[0]; // Default to first path, client will fallback if needed
+  };
+
   if (Array.isArray(products)) {
     return products.map((product) => ({
       ...product,
-      images: product.images.map((image) => ({
-        ...image,
-        url: image.url.startsWith("/") ? `${baseUrl}${image.url}` : image.url,
-      })),
+      images:
+        product.images.length > 0
+          ? product.images.map((image) => ({
+              ...image,
+              url: image.url.startsWith("/")
+                ? `${baseUrl}${image.url}`
+                : image.url,
+            }))
+          : [
+              {
+                url: `${baseUrl}${getImageUrl(product.slug)}`,
+                altText: product.name,
+              },
+            ],
     }));
   } else {
     return {
       ...products,
-      images: products.images.map((image) => ({
-        ...image,
-        url: image.url.startsWith("/") ? `${baseUrl}${image.url}` : image.url,
-      })),
+      images:
+        products.images.length > 0
+          ? products.images.map((image) => ({
+              ...image,
+              url: image.url.startsWith("/")
+                ? `${baseUrl}${image.url}`
+                : image.url,
+            }))
+          : [
+              {
+                url: `${baseUrl}${getImageUrl(products.slug)}`,
+                altText: products.name,
+              },
+            ],
     };
   }
 }

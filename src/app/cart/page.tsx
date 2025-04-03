@@ -227,11 +227,32 @@ export default function CartPage() {
                 <div className="bg-muted h-24 w-24 flex-shrink-0 overflow-hidden rounded-md">
                   <Link href={`/products/${item.slug}`}>
                     <Image
-                      src={item.image || "/placeholder.svg"}
+                      src={
+                        item.image ||
+                        (item.slug
+                          ? `/images/jewelry/${item.slug}.jpg`
+                          : "/placeholder.svg")
+                      }
                       alt={item.name}
                       width={80}
                       height={80}
                       className="h-20 w-20 rounded-md object-cover"
+                      onError={(e) => {
+                        // Try compressed version first
+                        const imgElement = e.currentTarget as HTMLImageElement;
+                        if (
+                          item.slug &&
+                          !imgElement.src.includes("compressed")
+                        ) {
+                          imgElement.src = `/images/jewelry/compressed/${item.slug}.jpg`;
+                        } else if (
+                          imgElement.src.includes("compressed") ||
+                          !item.slug
+                        ) {
+                          // If compressed version fails or no slug, use placeholder
+                          imgElement.src = "/placeholder.svg";
+                        }
+                      }}
                     />
                   </Link>
                 </div>

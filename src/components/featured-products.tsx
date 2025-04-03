@@ -112,13 +112,23 @@ export default function FeaturedProducts({
               <div className="bg-muted aspect-square overflow-hidden rounded-lg">
                 <Link href={`/products/${product.slug}`}>
                   <Image
-                    src={product.image || "/placeholder.svg"}
+                    src={product.image || `/images/jewelry/${product.slug}.jpg`}
                     alt={product.name}
                     width={300}
                     height={300}
                     className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                     priority={index < 4}
                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    onError={(e) => {
+                      // Try compressed version first
+                      const imgElement = e.currentTarget as HTMLImageElement;
+                      if (!imgElement.src.includes("compressed")) {
+                        imgElement.src = `/images/jewelry/compressed/${product.slug}.jpg`;
+                      } else if (imgElement.src.includes("compressed")) {
+                        // If compressed version fails, use placeholder
+                        imgElement.src = "/placeholder.svg";
+                      }
+                    }}
                   />
                 </Link>
                 <div className="absolute top-3 right-3 z-10 flex flex-col gap-2">

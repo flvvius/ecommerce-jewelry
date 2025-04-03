@@ -51,6 +51,14 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
     setIsLoading(true);
 
     try {
+      // Determine the best image URL to use
+      let imageUrl = product.images?.[0]?.url;
+
+      // If no image provided, use the product slug to construct path
+      if (!imageUrl && product.slug) {
+        imageUrl = `/images/jewelry/${product.slug}.jpg`;
+      }
+
       await addItem({
         id: product.id,
         productId: product.id,
@@ -60,10 +68,7 @@ export default function AddToCartButton({ product }: AddToCartButtonProps) {
             ? product.price
             : product.price.toString(),
         ),
-        image:
-          product.images?.[0]?.url ||
-          `/images/jewelry/${product.slug}.jpg` ||
-          "/placeholder.svg",
+        image: imageUrl || "/placeholder.svg",
         quantity,
         description: product.description,
         slug: product.slug,

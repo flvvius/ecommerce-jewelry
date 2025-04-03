@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
 import { Separator } from "~/components/ui/separator";
 import AddToCartButton from "~/components/add-to-cart-button";
+import ProductGallery from "~/components/product-gallery";
 
 // Define a more specific type for params
 type PageParams = {
@@ -54,49 +55,11 @@ export default async function ProductPage({ params }: PageParams) {
         <Suspense fallback={<ProductLoading />}>
           <div className="grid gap-8 md:grid-cols-2 lg:gap-16">
             {/* Product Gallery */}
-            <div className="space-y-4">
-              <div className="bg-muted aspect-square overflow-hidden rounded-lg">
-                <Image
-                  src={productData.images?.[0]?.url || "/placeholder.svg"}
-                  alt={productData.images?.[0]?.altText || productData.name}
-                  width={600}
-                  height={600}
-                  className="h-full w-full object-cover"
-                  priority
-                />
-              </div>
-              <div className="grid grid-cols-4 gap-2">
-                {productData.images && productData.images.length > 0 ? (
-                  productData.images.map(
-                    (
-                      image: { url: string; altText?: string },
-                      index: number,
-                    ) => (
-                      <div
-                        key={index}
-                        className="bg-muted aspect-square overflow-hidden rounded-md"
-                      >
-                        <Image
-                          src={image.url || "/placeholder.svg"}
-                          alt={
-                            image.altText || `${productData.name} ${index + 1}`
-                          }
-                          width={150}
-                          height={150}
-                          className="h-full w-full object-cover"
-                        />
-                      </div>
-                    ),
-                  )
-                ) : (
-                  <div className="bg-muted col-span-4 flex h-20 items-center justify-center rounded-md">
-                    <p className="text-muted-foreground text-sm">
-                      No additional images available
-                    </p>
-                  </div>
-                )}
-              </div>
-            </div>
+            <ProductGallery
+              images={productData.images || []}
+              productName={productData.name}
+              slug={productData.slug}
+            />
 
             {/* Product Info */}
             <div className="space-y-6">
