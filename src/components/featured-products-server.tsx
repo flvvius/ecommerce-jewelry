@@ -6,7 +6,7 @@ export default async function FeaturedProductsServer() {
   let products = [];
 
   try {
-    // Get the base URL from env or use default
+    // Get the base URL from env or use default - use the actual deployed URL in production
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL
       ? `${process.env.NEXT_PUBLIC_APP_URL}/api/products`
       : `http://localhost:3000/api/products`;
@@ -19,7 +19,10 @@ export default async function FeaturedProductsServer() {
     // Fetch with proper error handling - using absolute URL
     const res = await fetch(apiUrl, {
       next: { revalidate: 60 },
-      // Remove Host header which can cause issues
+      headers: {
+        // Add cache control headers to prevent stale responses
+        "Cache-Control": "no-cache",
+      },
     });
 
     if (!res.ok) {
@@ -31,6 +34,27 @@ export default async function FeaturedProductsServer() {
       products = [];
     } else {
       products = await res.json();
+
+      // Transform relative image URLs to absolute URLs if needed
+      products = products.map((product: any) => {
+        if (product.images && Array.isArray(product.images)) {
+          const processedImages = product.images.map((image: any) => {
+            if (image.url && image.url.startsWith("/")) {
+              // Convert relative image URLs to absolute using NEXT_PUBLIC_APP_URL
+              const baseImageUrl =
+                process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+              return {
+                ...image,
+                url: `${baseImageUrl}${image.url}`,
+              };
+            }
+            return image;
+          });
+          return { ...product, images: processedImages };
+        }
+        return product;
+      });
+
       console.log(`Successfully fetched ${products.length} featured products`);
     }
   } catch (error) {

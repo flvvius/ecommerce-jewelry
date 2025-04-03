@@ -1,70 +1,92 @@
 import { NextResponse } from "next/server";
 import { db } from "~/server/db";
+import { sql } from "drizzle-orm";
 import { products, productImages } from "~/server/db/schema";
-import { eq } from "drizzle-orm";
+import { eq } from "drizzle-orm/expressions";
 
 export async function GET(
   request: Request,
   { params }: { params: { slug: string } },
 ) {
   try {
-    const routeParams = await params;
-    const slug = routeParams.slug;
+    console.log(`Fetching product with slug: ${params.slug}`);
 
+    // Fetch the product by slug
     const result = await db
       .select({
-        products: products,
-        product_images: productImages,
+        id: products.id,
+        name: products.name,
+        description: products.description,
+        price: products.price,
+        discountPrice: products.discountPrice,
+        category: products.category,
+        material: products.material,
+        slug: products.slug,
+        isFeatured: products.isFeatured,
+        isNew: products.isNew,
+        isBestseller: products.isBestseller,
+        createdAt: products.createdAt,
+        images: sql<
+          string[]
+        >`coalesce(json_agg(json_build_object('url', ${productImages.url}, 'altText', ${productImages.altText})) FILTER (WHERE ${productImages.url} IS NOT NULL), '[]'::json)`,
       })
       .from(products)
       .leftJoin(productImages, eq(products.id, productImages.productId))
-      .where(eq(products.slug, slug));
+      .where(eq(products.slug, params.slug))
+      .groupBy(products.id);
 
-    if (result.length === 0) {
+    if (!result.length) {
+      console.log(`No product found with slug: ${params.slug}`);
       return NextResponse.json({ error: "Product not found" }, { status: 404 });
     }
 
-    // Get the product data
-    const productData = result[0]?.products!;
-    if (!productData) {
-      return NextResponse.json(
-        { error: "Product data incomplete" },
-        { status: 500 },
-      );
+    const product = result[0];
+
+    // Parse images if it's a string
+    let parsedImages;
+    try {
+      parsedImages =
+        typeof product.images === "string"
+          ? JSON.parse(product.images)
+          : product.images;
+    } catch (e) {
+      parsedImages = [];
     }
 
-    // Get all images for this product
-    const allImages = await db
-      .select()
-      .from(productImages)
-      .where(eq(productImages.productId, productData.id))
-      .orderBy(productImages.sortOrder);
+    // Add a default image if no images are available
+    if (
+      !parsedImages ||
+      parsedImages.length === 0 ||
+      parsedImages[0].url === null
+    ) {
+      parsedImages = [
+        {
+          url: `/images/jewelry/${product.slug}.jpg`,
+          altText: product.name,
+        },
+      ];
+    }
 
-    // Format the product data
-    const product = {
-      id: productData.id,
-      name: productData.name,
-      slug: productData.slug,
-      description: productData.description,
-      price: Number.parseFloat(productData.price.toString()),
-      compareAtPrice: productData.compareAtPrice
-        ? Number.parseFloat(productData.compareAtPrice.toString())
-        : null,
-      category: productData.category,
-      inventory: productData.inventory,
-      isNew: productData.isNew,
-      isBestseller: productData.isBestseller,
-      images: allImages.map((img) => ({
-        id: img.id,
-        url: img.url,
-        altText: img.altText,
-        isDefault: img.isDefault,
-      })),
+    // Process images to convert relative URLs to absolute URLs for production
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
+    parsedImages = parsedImages.map((image: any) => {
+      if (image.url && image.url.startsWith("/")) {
+        return {
+          ...image,
+          url: `${baseUrl}${image.url}`,
+        };
+      }
+      return image;
+    });
+
+    const productWithImages = {
+      ...product,
+      images: parsedImages,
     };
 
-    return NextResponse.json(product);
+    return NextResponse.json(productWithImages);
   } catch (error) {
-    console.error("Error fetching product:", error);
+    console.error(`Error fetching product with slug ${params.slug}:`, error);
     return NextResponse.json(
       { error: "Failed to fetch product" },
       { status: 500 },
